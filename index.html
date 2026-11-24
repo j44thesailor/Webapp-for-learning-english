@@ -301,7 +301,7 @@
     left: 50%;
     transform: translateX(-50%);
     z-index: 3;
-    width: min(440px, 84%);
+    width: min(460px, 86%);
     padding: 13px 18px;
     font: inherit;
     font-size: 16px;
@@ -316,7 +316,7 @@
     visibility: hidden;
     opacity: 0;
   }
-  #answer::placeholder { color: var(--mute); font-size: 13.5px; }
+  #answer::placeholder { color: var(--mute); font-size: 13px; }
   #answer:focus {
     border-color: var(--accent-cyan);
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6), 0 0 24px rgba(56, 189, 248, 0.28);
@@ -399,7 +399,52 @@
     border-color: var(--line);
     cursor: default;
   }
+  .opt.free {
+    border-color: var(--gold);
+    box-shadow: 0 0 18px rgba(251, 191, 36, 0.14);
+  }
+  .opt.free .r span { color: var(--gold); font-weight: 600; }
   .row { display: flex; gap: 10px; flex-wrap: wrap; }
+
+  /* Sổ Tử Huyệt Hậu Trận */
+  .weak-box {
+    background: rgba(21, 18, 43, 0.72);
+    border: 1px solid rgba(251, 113, 133, 0.35);
+    border-radius: 9px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 240px;
+    overflow-y: auto;
+  }
+  .weak-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 7px;
+    border-bottom: 1px solid rgba(37, 32, 68, 0.8);
+    font-size: 12px;
+  }
+  .weak-item:last-child { border-bottom: none; padding-bottom: 0; }
+  .weak-word { color: #f8fafc; font-weight: 600; }
+  .weak-vi { color: var(--fg-soft); margin-left: 6px; }
+  .weak-cnt { color: var(--danger); font-size: 11px; margin-left: 6px; }
+  .btn-xs {
+    font: inherit;
+    font-size: 11px;
+    padding: 4px 9px;
+    border-radius: 6px;
+    cursor: pointer;
+    background: rgba(56, 189, 248, 0.14);
+    color: #bae6fd;
+    border: 1px solid rgba(56, 189, 248, 0.4);
+  }
+  .btn-xs:hover {
+    background: rgba(56, 189, 248, 0.28);
+    color: #fff;
+  }
 
   @media (max-width: 760px) {
     body { grid-template-columns: 1fr; grid-template-rows: auto 1fr; height: auto; min-height: 100vh; overflow: auto; }
@@ -643,7 +688,6 @@
       const sway = Math.sin(it.t * it.freq + it.phase) * it.amp;
       const x = it.baseX + sway;
 
-      // Smooth fade-in from bottom and fade-out near top
       const fadeIn = Math.min(1, Math.max(0, (fh - it.y) / 90));
       const fadeOut = Math.min(1, Math.max(0, (it.y + it.h) / 110));
       const alpha = it.maxAlpha * fadeIn * fadeOut;
@@ -697,14 +741,75 @@
   }
 
   /* =====================================================
+   *  WEB SPEECH API (Natural Voice Selection + Manual Tab Trigger)
+   * ===================================================== */
+  let bestEnVoice = null;
+  function pickBestEnglishVoice() {
+    if (!("speechSynthesis" in window)) return null;
+    const voices = window.speechSynthesis.getVoices() || [];
+    if (!voices.length) return null;
+
+    const preferredPatterns = [
+      /Microsoft Aria Online.*Natural/i,
+      /Microsoft Jenny Online.*Natural/i,
+      /Microsoft Guy Online.*Natural/i,
+      /Microsoft Ava Online.*Natural/i,
+      /Google US English/i,
+      /Google UK English Female/i,
+      /Samantha/i,
+      /Karen/i,
+      /Daniel/i,
+      /Microsoft Zira/i,
+      /Microsoft David/i,
+    ];
+
+    for (const pat of preferredPatterns) {
+      const match = voices.find(v => pat.test(v.name));
+      if (match) return match;
+    }
+    return (
+      voices.find(v => /^en[-_]US$/i.test(v.lang) && /natural|neural|google|premium/i.test(v.name)) ||
+      voices.find(v => /^en[-_]US$/i.test(v.lang)) ||
+      voices.find(v => /^en/i.test(v.lang)) ||
+      null
+    );
+  }
+
+  if ("speechSynthesis" in window) {
+    bestEnVoice = pickBestEnglishVoice();
+    window.speechSynthesis.onvoiceschanged = () => {
+      bestEnVoice = pickBestEnglishVoice();
+    };
+  }
+
+  function speakWord(word, slow = false) {
+    if (!word || !("speechSynthesis" in window)) return;
+    try {
+      window.speechSynthesis.cancel();
+      if (!bestEnVoice) bestEnVoice = pickBestEnglishVoice();
+      const u = new SpeechSynthesisUtterance(word);
+      if (bestEnVoice) {
+        u.voice = bestEnVoice;
+        u.lang = bestEnVoice.lang || "en-US";
+      } else {
+        u.lang = "en-US";
+      }
+      u.rate = slow ? 0.82 : 0.94;
+      u.pitch = 1.02;
+      window.speechSynthesis.speak(u);
+    } catch (e) {}
+  }
+
+  /* =====================================================
    *  META PROGRESSION (persists across runs)
    * ===================================================== */
   const META_ITEMS = [
-    { id: "armor",  kind: "unlock", name: "Mở khóa: Giáp Bảo Vệ",      desc: "thêm Giáp Bảo Vệ vào danh sách nâng cấp",       cost: 20 },
-    { id: "turret", kind: "unlock", name: "Mở khóa: Tháp Pháo Phụ",     desc: "thêm Tháp Pháo Tự Động vào danh sách nâng cấp", cost: 40 },
-    { id: "curses", kind: "unlock", name: "Mở khóa: Lời Nguyền",        desc: "chọn lời nguyền mỗi đợt để nhận xu x1.5",       cost: 30 },
-    { id: "life",   kind: "perk",   name: "Thêm Tim Khởi Đầu",          desc: "+1 mạng mỗi khi bắt đầu lượt chơi",  max: 2, costs: [40, 90] },
-    { id: "seed",   kind: "perk",   name: "Vốn Khởi Nghiệp",            desc: "+15 xu mỗi khi bắt đầu lượt chơi",   max: 3, costs: [15, 30, 50] },
+    { id: "boundary", kind: "unlock", name: "Định Vị Đầu – Đuôi",         desc: "luôn giữ lộ chữ cái đầu và cuối của từ để dễ định hình mặt chữ", cost: 35 },
+    { id: "armor",    kind: "unlock", name: "Mở khóa: Giáp Bảo Vệ",      desc: "thêm Giáp Bảo Vệ vào danh sách nâng cấp",       cost: 20 },
+    { id: "turret",   kind: "unlock", name: "Mở khóa: Tháp Pháo Phụ",     desc: "thêm Tháp Pháo Tự Động vào danh sách nâng cấp", cost: 40 },
+    { id: "curses",   kind: "unlock", name: "Mở khóa: Lời Nguyền",        desc: "chọn lời nguyền mỗi đợt để nhận xu x1.5",       cost: 30 },
+    { id: "life",     kind: "perk",   name: "Thêm Tim Khởi Đầu",          desc: "+1 mạng mỗi khi bắt đầu lượt chơi",  max: 2, costs: [40, 90] },
+    { id: "seed",     kind: "perk",   name: "Vốn Khởi Nghiệp",            desc: "+15 xu mỗi khi bắt đầu lượt chơi",   max: 3, costs: [15, 30, 50] },
   ];
   const defaultMeta = () => ({ shards: 0, bestScore: 0, bestWave: 0, unlocked: {}, perks: {} });
   let meta = defaultMeta();
@@ -713,7 +818,22 @@
   const perk = id => meta.perks[id] || 0;
 
   /* =====================================================
-   *  GAME 1 — PHÁO ĐÀI TỪ VỰNG (Word Cannon)
+   *  BOSS ASCII ART (Auto-generated monolith)
+   * ===================================================== */
+  const BOSS_ASCII = [
+    "       .---.   .---.       ",
+    "    .-/  _  \\_/  _  \\-.    ",
+    "   /  | (O) | | (O) |  \\   ",
+    "  |===+-----+_+-----+===|  ",
+    "  |  [  LEXICON TITAN ] |  ",
+    "  |===+=============+===|  ",
+    "   \\  |  \\/\\/\\/\\/\\/  |  /   ",
+    "    '-\\_____________/--'   ",
+    "      //   || ||   \\\\      ",
+  ];
+
+  /* =====================================================
+   *  GAME 1 — PHÁO ĐÀI TỪ VỰNG (Word Cannon + Boss + Learning Upgrades)
    * ===================================================== */
   const DIFF = {
     han:    { hide: 0.25, speed: 0.32, hint: 0.20, waveSpeed: 0.025 },
@@ -727,11 +847,12 @@
   const CURSE_COIN_MULT = 1.5;
   const TURRET_HITS = 5;
   const HINT_STEP = 0.35;
+
   const UPG = {
-    slow:   { name: "Trường Làm Chậm", max: 5, cost: l => 30 + 20 * l, desc: "từ di chuyển chậm đi 12%" },
-    reveal: { name: "Hé Lộ Thêm",      max: 3, cost: l => 35 + 25 * l, desc: "mỗi từ hiển thị thêm 1 chữ cái" },
-    armor:  { name: "Giáp Bảo Vệ",     max: 4, cost: l => 40 + 30 * l, desc: "+1 mạng", meta: "armor" },
-    turret: { name: "Tháp Pháo Phụ",   max: 4, cost: l => (l === 0 ? 60 : 50 + 35 * l), desc: `bắn đẩy lùi từ, ${TURRET_HITS} phát tiêu diệt 1 từ`, meta: "turret" },
+    slow:     { name: "Trường Làm Chậm",    max: 5, cost: l => 30 + 20 * l, desc: "từ và boss di chuyển chậm đi 12%" },
+    reveal:   { name: "Hé Lộ Thêm",         max: 3, cost: l => 35 + 25 * l, desc: "mỗi từ hiển thị thêm 1 chữ cái" },
+    armor:    { name: "Giáp Bảo Vệ",        max: 4, cost: l => 40 + 30 * l, desc: "+1 mạng", meta: "armor" },
+    turret:   { name: "Tháp Pháo Phụ",      max: 4, cost: l => (l === 0 ? 60 : 50 + 35 * l), desc: `bắn đẩy lùi từ (ưu tiên tên lửa boss), ${TURRET_HITS} phát diệt 1 từ`, meta: "turret" },
   };
   const CURSES = {
     swift: { name: "Tốc Hành", desc: "từ di chuyển nhanh +25%" },
@@ -742,13 +863,14 @@
   const input = $("#answer"), hud = $("#hud"), vocabInfo = $("#vocabInfo");
   const ov = $("#ov"), ovBody = $("#ovBody");
   let W = 0, H = 0, raf = 0, last = 0, state = "idle", prevState = "play", ovKind = null;
-  let R = null, enemies = [], shots = [], parts = [], floats = [], stars = [], bag = [], laneCount = 3, shakeT = 0, introT = 0;
+  let R = null, enemies = [], boss = null, shots = [], parts = [], floats = [], stars = [], bag = [], laneCount = 3, shakeT = 0, introT = 0;
   const cannon = { x: -90, angle: 0, recoil: 0, tAngle: -0.3 };
   const TOP = 68, BOTTOM = 96, BLOCK_H = 60;
   const rand = (a, b) => a + Math.random() * (b - a);
   const easeOut = p => 1 - Math.pow(1 - p, 3);
   const norm = s => s.toLowerCase().replace(/\s+/g, " ").trim();
   const running = () => ["intro", "play", "shop", "paused"].includes(state);
+  const isBossWave = w => w > 0 && w % 5 === 0;
 
   function initStars() {
     stars = Array.from({ length: 48 }, () => ({
@@ -780,57 +902,146 @@
     return W * BASE_SPEED * d.speed * (1 + d.waveSpeed * (R.wave - 1)) *
       (R.curse === "swift" ? 1.25 : 1) * Math.pow(0.88, R.upg.slow);
   };
-  const toSpawnFor = w => WAVE_BASE + WAVE_STEP * w;
+  const toSpawnFor = w => isBossWave(w) ? 1 : (WAVE_BASE + WAVE_STEP * w);
   const spawnGap = () => {
     const slowScale = $("#diff").value === "han" ? 1.45 : 1;
     return (Math.max(1.5, 3.0 - 0.1 * R.wave) + rand(0, 0.7)) * slowScale;
   };
-  const hintZoneWidth = () => W * Math.max(0.08, diff().hint - 0.008 * (R.wave - 1));
+  const hintZoneWidth = (isWeak = false) => {
+    const base = W * Math.max(0.08, diff().hint - 0.008 * (R.wave - 1));
+    return isWeak ? base * 1.35 : base;
+  };
 
-  function nextWord() {
+  /* ---- Weak words tracking (Sổ Tử Huyệt + Radar Từ Yếu) ---- */
+  function recordWeakWord(en, vi) {
+    if (!R || !en) return;
+    const key = norm(en);
+    if (!R.weakMap[key]) {
+      const found = vocab.find(v => norm(v[0]) === key);
+      R.weakMap[key] = { en: found ? found[0] : en, vi: vi || (found ? found[1] : ""), count: 0 };
+    }
+    R.weakMap[key].count++;
+  }
+  const isWeakKey = en => !!(R && R.weakMap[norm(en)]);
+
+  function nextWord(opts = {}) {
+    // Cơ chế lặp lại từ yếu tích hợp sẵn: ưu tiên bốc lại từ từng gõ sai/lọt
+    if (R) {
+      const weakKeys = Object.keys(R.weakMap);
+      if (weakKeys.length && Math.random() < 0.40) {
+        const k = weakKeys[(Math.random() * weakKeys.length) | 0];
+        const w = R.weakMap[k];
+        if (w) return [w.en, w.vi];
+      }
+    }
+
+    if (opts.preferLong) {
+      const longWords = vocab.filter(([en]) => en.replace(/\s+/g, "").length >= 7);
+      if (longWords.length) return longWords[(Math.random() * longWords.length) | 0];
+    }
+    if (opts.preferShort) {
+      const shortWords = vocab.filter(([en]) => en.replace(/\s+/g, "").length <= 6);
+      if (shortWords.length) return shortWords[(Math.random() * shortWords.length) | 0];
+    }
+
     if (!bag.length) {
       bag = vocab.map((_, i) => i);
       for (let i = bag.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [bag[i], bag[j]] = [bag[j], bag[i]]; }
     }
     return vocab[bag.pop()];
   }
+
   function mask(word) {
     const chars = [...word];
-    const idx = chars.map((c, i) => (/[\p{L}\d]/u.test(c) ? i : -1)).filter(i => i >= 0);
+    const allAlpha = chars.map((c, i) => (/[\p{L}\d]/u.test(c) ? i : -1)).filter(i => i >= 0);
+    let idx = allAlpha.slice();
+
+    // Định Vị Đầu – Đuôi (nâng cấp bằng mảnh tinh thể): giữ lộ chữ cái đầu và cuối
+    if (meta.unlocked.boundary && idx.length >= 3) {
+      idx = idx.slice(1, -1);
+    }
+
     for (let i = idx.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [idx[i], idx[j]] = [idx[j], idx[i]]; }
-    let n = Math.max(1, Math.round(idx.length * hideFrac()));
-    n = Math.min(idx.length, Math.max(0, n - R.upg.reveal));
+    let n = Math.max(1, Math.round(allAlpha.length * hideFrac()));
+    n = Math.min(idx.length, Math.max(idx.length > 0 ? 1 : 0, n - R.upg.reveal));
     const order = idx.slice(0, n);
     order.forEach(i => (chars[i] = "_"));
     return { text: chars.join(" "), hidden: n, order };
   }
 
-  function spawn() {
+  function spawn(opts = {}) {
     const busyLanes = new Set(enemies.filter(e => e.x + e.w > W - 30).map(e => e.lane));
     const free = [...Array(laneCount).keys()].filter(l => !busyLanes.has(l));
     if (!free.length) return false;
     const lane = free[(Math.random() * free.length) | 0];
-    const [en, vi] = nextWord();
+    const [en, vi] = nextWord(opts);
     const m = mask(en);
+    const weak = isWeakKey(en);
     ctx.font = "bold 18px monospace"; const w1 = ctx.measureText(m.text).width;
     ctx.font = "13px monospace";      const w2 = ctx.measureText(vi).width;
-    enemies.push({
+    const startX = typeof opts.startX === "number" ? opts.startX : (W + 10);
+    const enemy = {
       word: en, shown: m.text, vi, hidden: m.hidden, lane,
-      w: Math.max(w1, w2) + 36, x: W + 10, dead: false, targeted: false, hits: 0,
+      w: Math.max(w1, w2) + 36, x: startX, dead: false, targeted: false, hits: 0,
       orig: [...en], order: m.order.slice().sort((a, b) => a - b),
-      hintT: 0, step: -1, inZone: false, flash: 0
-    });
+      hintT: 0, step: -1, inZone: false, flash: 0,
+      weak, isMissile: !!opts.isMissile, spokeSpawn: false
+    };
+    enemies.push(enemy);
     return true;
   }
 
-  function hint(e, dt) {
+  /* ---- BOSS ENTITY ---- */
+  function loadBossWord(b) {
+    const [en, vi] = nextWord({ preferLong: true });
+    const m = mask(en);
+    const weak = isWeakKey(en);
+    b.word = en;
+    b.shown = m.text;
+    b.vi = vi;
+    b.hidden = m.hidden;
+    b.orig = [...en];
+    b.order = m.order.slice().sort((a, c) => a - c);
+    b.hintT = 0;
+    b.step = -1;
+    b.inZone = false;
+    b.flash = 0.35;
+    b.weak = weak;
+    b.targeted = false;
+  }
+
+  function spawnBoss() {
+    const tier = Math.max(1, Math.floor(R.wave / 5));
+    const maxHp = 8 + 2 * tier;
+    const bh = Math.max(220, H - TOP - BOTTOM - 18);
+    const bw = Math.min(310, Math.max(240, W * 0.26));
+    boss = {
+      tier,
+      maxHp,
+      hp: maxHp,
+      w: bw,
+      h: bh,
+      x: W + 20,
+      y: TOP + (H - TOP - BOTTOM - bh) / 2,
+      missileT: 3.4,
+      slowT: 0,
+      hurtT: 0,
+      word: "", shown: "", vi: "", hidden: 0,
+      orig: [], order: [], hintT: 0, step: -1, inZone: false, flash: 0, weak: false, targeted: false
+    };
+    loadBossWord(boss);
+  }
+
+  function hint(e, dt, customStart) {
     if (e.flash > 0) e.flash -= dt;
     const n = e.order.length;
     if (!n) return;
     const build = ri => { const a = [...e.orig]; e.order.forEach(i => { if (i !== ri) a[i] = "_"; }); return a.join(" "); };
-    const start = cannon.x + 44 + hintZoneWidth();
+    const start = typeof customStart === "number" ? customStart : (cannon.x + 44 + hintZoneWidth(e.weak));
     if (e.x < start) {
-      if (!e.inZone) { e.inZone = true; e.hintT = 0; e.flash = 0.35; }
+      if (!e.inZone) {
+        e.inZone = true; e.hintT = 0; e.flash = 0.35;
+      }
       e.hintT += dt;
       const frames = n === 1 ? 2 : n;
       const step = Math.floor(e.hintT / HINT_STEP) % frames;
@@ -839,39 +1050,52 @@
       e.inZone = false; e.step = -1; e.shown = build(-1);
     }
   }
-  const center = e => ({ x: e.x + e.w / 2, y: laneY(e.lane) });
+
+  const center = e => e === boss
+    ? ({ x: boss.x + boss.w * 0.42, y: boss.y + boss.h / 2 })
+    : ({ x: e.x + e.w / 2, y: laneY(e.lane) });
+
   function muzzle() {
     const L = 78 - cannon.recoil;
     return { x: cannon.x + Math.cos(cannon.angle) * L, y: cannonY() + Math.sin(cannon.angle) * L };
   }
 
-  function fire(e) {
-    e.targeted = true;
-    const c = center(e);
+  function fire(targetObj) {
+    targetObj.targeted = true;
+    const c = center(targetObj);
     cannon.angle = Math.atan2(c.y - cannonY(), c.x - cannon.x);
     cannon.recoil = 14;
     const m = muzzle();
-    shots.push({ x: m.x, y: m.y, target: e, kind: "main" });
+    shots.push({ x: m.x, y: m.y, target: targetObj, kind: "main" });
   }
+
   function fireTurret() {
-    const cand = enemies.filter(e => !e.dead && !e.targeted && e.x < W - 10);
-    if (!cand.length) return false;
-    const e = cand.reduce((a, b) => (a.x < b.x ? a : b)), c = center(e);
+    // Prioritize enemy missiles first, then normal enemies, then Boss
+    const missiles = enemies.filter(e => !e.dead && !e.targeted && e.isMissile && e.x < W - 10);
+    const regulars = enemies.filter(e => !e.dead && !e.targeted && !e.isMissile && e.x < W - 10);
+    let targetObj = null;
+    if (missiles.length) targetObj = missiles.reduce((a, b) => (a.x < b.x ? a : b));
+    else if (regulars.length) targetObj = regulars.reduce((a, b) => (a.x < b.x ? a : b));
+    else if (boss && boss.hp > 0 && boss.x < W - 20) targetObj = boss;
+
+    if (!targetObj) return false;
+    const c = center(targetObj);
     const ox = cannon.x, oy = cannonY() - 22;
     cannon.tAngle = Math.atan2(c.y - oy, c.x - ox);
-    shots.push({ x: ox + Math.cos(cannon.tAngle) * 30, y: oy + Math.sin(cannon.tAngle) * 30, target: e, kind: "turret" });
+    shots.push({ x: ox + Math.cos(cannon.tAngle) * 30, y: oy + Math.sin(cannon.tAngle) * 30, target: targetObj, kind: "turret" });
     return true;
   }
 
   function explode(e, auto) {
     e.dead = true; R.kills++;
     const base = 1 + Math.ceil(e.hidden / 2);
+    const weakBonus = e.weak ? 2 : 1;
     let gain;
-    if (auto) { gain = Math.max(1, Math.ceil(base / 2)); R.score += 5; }
+    if (auto) { gain = Math.max(1, Math.ceil(base / 2)) * weakBonus; R.score += 5 * weakBonus; }
     else {
       R.streak++; R.maxStreak = Math.max(R.maxStreak, R.streak);
-      gain = Math.max(1, Math.round(base * comboMult(R.streak) * (R.curse ? CURSE_COIN_MULT : 1)));
-      R.score += Math.round((10 + e.hidden * 5) * comboMult(R.streak));
+      gain = Math.max(1, Math.round(base * comboMult(R.streak) * (R.curse ? CURSE_COIN_MULT : 1))) * weakBonus;
+      R.score += Math.round((10 + e.hidden * 5) * comboMult(R.streak)) * weakBonus;
     }
     R.coins += gain; R.earned += gain;
     const c = center(e);
@@ -881,11 +1105,68 @@
         x: c.x, y: c.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v,
         life: rand(.45, .85), max: .85,
         ch: "*#%@+✦"[(Math.random() * 6) | 0],
-        col: i % 2 === 0 ? "#a78bfa" : "#38bdf8"
+        col: e.weak ? "#fbbf24" : (i % 2 === 0 ? "#a78bfa" : "#38bdf8")
       });
     }
     floats.push({ text: e.word, x: c.x, y: c.y, life: 1.15, col: "#f1effc" });
-    floats.push({ text: `+${gain} xu`, x: c.x, y: c.y + 26, life: .85, small: true, col: "#fbbf24" });
+    floats.push({ text: `+${gain} xu${weakBonus > 1 ? " (x2 Từ yếu)" : ""}`, x: c.x, y: c.y + 26, life: .85, small: true, col: "#fbbf24" });
+  }
+
+  function hitBoss() {
+    if (!boss || boss.hp <= 0) return;
+    boss.hp--;
+    boss.hurtT = 0.25;
+    // Knockback Boss slightly
+    boss.x = Math.min(W - boss.w * 0.45, boss.x + W * 0.055);
+    R.streak++;
+    R.maxStreak = Math.max(R.maxStreak, R.streak);
+    const weakBonus = boss.weak ? 2 : 1;
+    const gain = (2 + Math.ceil(boss.hidden / 2)) * weakBonus;
+    R.coins += gain;
+    R.earned += gain;
+    R.score += Math.round((25 + boss.hidden * 6) * comboMult(R.streak)) * weakBonus;
+
+    const c = center(boss);
+    for (let i = 0; i < 18; i++) {
+      const a = rand(0, Math.PI * 2), v = rand(70, 250);
+      parts.push({
+        x: c.x, y: c.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v,
+        life: rand(.4, .8), max: .8,
+        ch: "*#%@+✦"[(Math.random() * 6) | 0],
+        col: i % 2 === 0 ? "#fb7185" : "#fbbf24"
+      });
+    }
+    floats.push({ text: `${boss.word} (-1 HP)`, x: c.x, y: c.y - 10, life: 1.0, col: "#f1effc" });
+    floats.push({ text: `+${gain} xu`, x: c.x, y: c.y + 16, life: .8, small: true, col: "#fbbf24" });
+
+    if (boss.hp <= 0) {
+      // Defeated Boss!
+      const bonusCoins = 20 + 5 * R.wave;
+      const bonusShards = 6 + 2 * boss.tier;
+      R.coins += bonusCoins;
+      R.earned += bonusCoins;
+      R.lives++;
+      R.kills++;
+      meta.shards += bonusShards;
+      saveMeta();
+      enemies.forEach(e => { e.dead = true; });
+      shakeT = 0.45;
+      for (let i = 0; i < 42; i++) {
+        const a = rand(0, Math.PI * 2), v = rand(80, 320);
+        parts.push({
+          x: c.x, y: c.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v,
+          life: rand(.6, 1.2), max: 1.2,
+          ch: "*#%@+✦"[(Math.random() * 6) | 0],
+          col: i % 3 === 0 ? "#fbbf24" : (i % 3 === 1 ? "#a78bfa" : "#38bdf8")
+        });
+      }
+      floats.push({ text: `HẠ GỤC BOSS! +${bonusCoins} xu · +1 ♥ · +${bonusShards} mảnh`, x: W / 2, y: H / 2, life: 1.5, col: "#fbbf24" });
+      boss = null;
+      R.freePick = true;
+      setTimeout(() => { if (state === "play") openShop(); }, 950);
+    } else {
+      loadBossWord(boss);
+    }
   }
 
   function newRun() {
@@ -896,8 +1177,9 @@
       upg: { slow: 0, reveal: 0, armor: 0, turret: 0 },
       curse: null, nextCurse: null, turretT: 4,
       draft: [], rerolls: 0, awarded: false, gain: 0,
+      weakMap: {}, freePick: false,
     };
-    enemies = []; shots = []; parts = []; floats = []; bag = [];
+    enemies = []; boss = null; shots = []; parts = []; floats = []; bag = [];
     shakeT = 0; introT = 0;
     laneCount = Math.max(2, Math.min(5, Math.floor((H - TOP - BOTTOM) / 76)));
     cannon.x = -90; cannon.angle = 0; cannon.recoil = 0;
@@ -918,8 +1200,8 @@
   function gameOver() { state = "over"; awardShards(); input.blur(); showOv("over"); }
 
   /* ---- overlay rendering ---- */
-  const opt = (attr, title, right, desc, off) =>
-    `<button class="opt" ${attr} ${off ? "disabled" : ""}><div class="r"><b>${title}</b><span>${right}</span></div><div class="d">${desc}</div></button>`;
+  const opt = (attr, title, right, desc, off, extraCls = "") =>
+    `<button class="opt ${extraCls}" ${attr} ${off ? "disabled" : ""}><div class="r"><b>${title}</b><span>${right}</span></div><div class="d">${desc}</div></button>`;
 
   function poolIds() {
     return Object.keys(UPG).filter(id => (!UPG[id].meta || meta.unlocked[UPG[id].meta]) && R.upg[id] < UPG[id].max);
@@ -949,29 +1231,56 @@
     return h;
   }
 
+  function weakBookHTML() {
+    const list = Object.values(R.weakMap).sort((a, b) => b.count - a.count);
+    let h = `<h3>SỔ TỬ HUYỆT HẬU TRẬN (${list.length} từ cần ôn lại)</h3>`;
+    if (!list.length) {
+      h += `<div class="m">Tuyệt vời! Lượt này mày không gõ sai hay để lọt từ nào.</div>`;
+      return h;
+    }
+    h += `<div class="weak-box">` + list.map(it =>
+      `<div class="weak-item">
+        <div><span class="weak-word">${it.en}</span><span class="weak-vi">— ${it.vi}</span><span class="weak-cnt">(sai/lọt ${it.count} lần)</span></div>
+        <button class="btn-xs" data-act="speak" data-word="${it.en.replace(/"/g, "&quot;")}">🔊 Nghe</button>
+      </div>`
+    ).join("") + `</div>
+    <div class="row"><button class="btn" data-act="exportWeak">⬇ Tải file từ yếu để ôn riêng (.txt)</button></div>`;
+    return h;
+  }
+
   function renderOv() {
     if (ovKind === "shop") {
-      let h = `<h2>HOÀN THÀNH ĐỢT ${R.wave}</h2>
-        <div class="m">xu: <b>${R.coins}</b> &nbsp;·&nbsp; điểm: <b>${R.score}</b> &nbsp;·&nbsp; mạng: <b>${R.lives}</b> &nbsp;·&nbsp; chuỗi cao nhất: <b>${R.maxStreak}</b></div>
-        <h3>NÂNG CẤP TRONG TRẬN &nbsp;[1] [2] [3]</h3>`;
+      const nextIsBoss = isBossWave(R.wave + 1);
+      let h = `<h2>HOÀN THÀNH ĐỢT ${R.wave}${R.freePick ? " — THƯỞNG HẠ BOSS" : ""}</h2>
+        <div class="m">xu: <b>${R.coins}</b> &nbsp;·&nbsp; điểm: <b>${R.score}</b> &nbsp;·&nbsp; mạng: <b>${R.lives}</b> &nbsp;·&nbsp; chuỗi cao nhất: <b>${R.maxStreak}</b></div>` +
+        (R.freePick ? `<div class="m" style="color:var(--gold)">★ Chiến lợi phẩm Boss: Chọn miễn phí 1 nâng cấp đầu tiên (0 xu)!</div>` : "") +
+        `<h3>NÂNG CẤP TRONG TRẬN &nbsp;[1] [2] [3]</h3>`;
       if (!R.draft.length) h += `<div class="m">đã nâng cấp tối đa tất cả kỹ năng.</div>`;
       R.draft.forEach((id, i) => {
-        const u = UPG[id], lv = R.upg[id], cost = u.cost(lv);
-        h += opt(`data-act="buy" data-i="${i}"`, `[${i + 1}] ${u.name}  (Cấp ${lv} → ${lv + 1})`, `${cost} xu`, u.desc, R.coins < cost);
+        const u = UPG[id], lv = R.upg[id], cost = R.freePick ? 0 : u.cost(lv);
+        h += opt(
+          `data-act="buy" data-i="${i}"`,
+          `[${i + 1}] ${u.name}  (Cấp ${lv} → ${lv + 1})`,
+          R.freePick ? "MIỄN PHÍ (0 xu)" : `${cost} xu`,
+          u.desc,
+          R.coins < cost,
+          R.freePick ? "free" : ""
+        );
       });
       h += `<div class="row"><button class="btn" data-act="reroll" ${R.coins < rerollCost() ? "disabled" : ""}>[R] Đổi danh sách — ${rerollCost()} xu</button></div>`;
-      if (meta.unlocked.curses) {
+      if (meta.unlocked.curses && !nextIsBoss) {
         h += `<h3>LỜI NGUYỀN CHO ĐỢT SAU (xu x${CURSE_COIN_MULT}) &nbsp;[C]</h3><div class="row">
           <button class="btn ${!R.nextCurse ? "on" : ""}" data-act="curse" data-v="">Không dùng</button>` +
           Object.entries(CURSES).map(([k, c]) => `<button class="btn ${R.nextCurse === k ? "on" : ""}" data-act="curse" data-v="${k}" title="${c.desc}">${c.name} — ${c.desc}</button>`).join("") + `</div>`;
       }
-      h += `<h3></h3><button class="opt" data-act="start"><div class="r"><b>[Enter] Bắt đầu đợt ${R.wave + 1}</b><span>${toSpawnFor(R.wave + 1)} từ vựng</span></div></button>`;
+      h += `<h3></h3><button class="opt" data-act="start"><div class="r"><b>[Enter] ${nextIsBoss ? `Đối đầu BOSS Đợt ${R.wave + 1}` : `Bắt đầu đợt ${R.wave + 1}`}</b><span>${nextIsBoss ? "Trùm từ vựng xuất hiện" : `${toSpawnFor(R.wave + 1)} từ vựng`}</span></div></button>`;
       ovBody.innerHTML = h;
     } else if (ovKind === "over") {
       ovBody.innerHTML = `<h2>KẾT THÚC</h2>
         <div class="m">đợt: <b>${R.wave}</b> &nbsp;·&nbsp; điểm: <b>${R.score}</b> &nbsp;·&nbsp; bắn hạ: <b>${R.kills}</b> từ &nbsp;·&nbsp; chuỗi cao nhất: <b>${R.maxStreak}</b><br>
         xu kiếm được: ${R.earned} &nbsp;→&nbsp; <b>+${R.gain} mảnh tinh thể</b><br>
         kỷ lục cá nhân: đợt ${meta.bestWave}, điểm ${meta.bestScore}</div>
+        ${weakBookHTML()}
         ${workshopHTML()}
         <h3></h3><button class="opt" data-act="restart"><div class="r"><b>Chơi lại từ đầu</b><span></span></div></button>`;
     } else if (ovKind === "workshop") {
@@ -984,9 +1293,10 @@
   /* ---- shop actions ---- */
   function buy(i) {
     const id = R.draft[i]; if (!id) return;
-    const u = UPG[id], cost = u.cost(R.upg[id]);
+    const u = UPG[id], cost = R.freePick ? 0 : u.cost(R.upg[id]);
     if (R.coins < cost) return;
     R.coins -= cost; R.upg[id]++;
+    if (R.freePick) R.freePick = false;
     if (id === "armor") R.lives++;
     const others = R.draft.filter((_, k) => k !== i);
     const repl = pickOne(others);
@@ -999,9 +1309,15 @@
     R.draft = rollDraft(); renderOv();
   }
   function startNextWave() {
-    R.wave++; R.toSpawn = toSpawnFor(R.wave); R.spawned = 0;
-    R.curse = R.nextCurse; R.nextCurse = null;
-    R.banner = 2; R.spawnT = 1.2; R.turretT = 3;
+    R.wave++;
+    R.toSpawn = toSpawnFor(R.wave);
+    R.spawned = 0;
+    R.curse = isBossWave(R.wave) ? null : R.nextCurse;
+    R.nextCurse = null;
+    R.banner = 2.2;
+    R.spawnT = 1.2;
+    R.turretT = 3;
+    boss = null;
     hideOv(); state = "play"; input.focus();
   }
   function openShop() {
@@ -1018,6 +1334,19 @@
     else if (a === "start") startNextWave();
     else if (a === "restart") startGame();
     else if (a === "resume") { hideOv(); state = prevState; input.focus(); }
+    else if (a === "speak") { speakWord(b.dataset.word, true); }
+    else if (a === "exportWeak") {
+      const list = Object.values(R.weakMap);
+      if (!list.length) return;
+      const content = list.map(it => `${it.en}, ${it.vi}`).join("\n");
+      const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `tu-yeu-dot-${R.wave}.txt`;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
     else if (a === "meta") {
       const it = META_ITEMS.find(x => x.id === b.dataset.id);
       const cost = it.kind === "unlock" ? it.cost : it.costs[perk(it.id)];
@@ -1029,15 +1358,25 @@
     }
     if (document.activeElement && document.activeElement !== input) document.activeElement.blur();
   });
+
   document.addEventListener("keydown", e => {
-    if (ovKind !== "shop") return;
-    const k = e.key.toLowerCase();
-    if (k === "1" || k === "2" || k === "3") buy(+k - 1);
-    else if (k === "r") reroll();
-    else if (k === "c" && meta.unlocked.curses) { const o = ["", "swift", "fog"]; R.nextCurse = o[(o.indexOf(R.nextCurse || "") + 1) % 3] || null; renderOv(); }
-    else if (k === "enter" || k === " ") startNextWave();
-    else return;
-    e.preventDefault();
+    if (ovKind === "shop") {
+      const k = e.key.toLowerCase();
+      if (k === "1" || k === "2" || k === "3") buy(+k - 1);
+      else if (k === "r") reroll();
+      else if (k === "c" && meta.unlocked.curses && !isBossWave(R.wave + 1)) { const o = ["", "swift", "fog"]; R.nextCurse = o[(o.indexOf(R.nextCurse || "") + 1) % 3] || null; renderOv(); }
+      else if (k === "enter" || k === " ") startNextWave();
+      else return;
+      e.preventDefault();
+      return;
+    }
+    // Phím Tab luôn đọc lại chậm rõ từ gần nhất
+    if (e.key === "Tab" && state === "play") {
+      e.preventDefault();
+      const frontEnemy = enemies.filter(en => !en.dead && !en.targeted).sort((a, b) => a.x - b.x)[0];
+      const targetWord = frontEnemy ? frontEnemy.word : (boss ? boss.word : "");
+      if (targetWord) speakWord(targetWord, true);
+    }
   });
 
   /* ---- update / draw ---- */
@@ -1050,46 +1389,108 @@
     }
     if (state === "play") {
       R.banner = Math.max(0, R.banner - dt);
-      if (R.banner < 1 && R.spawned < R.toSpawn) {
-        R.spawnT -= dt;
-        if (R.spawnT <= 0) { if (spawn()) { R.spawned++; R.spawnT = spawnGap(); } else R.spawnT = 0.3; }
-      }
-      const speed = speedNow(), danger = cannon.x + 44;
-      for (const e of enemies) {
-        if (e.dead) continue;
-        e.x -= speed * dt;
-        hint(e, dt);
-        if (e.x <= danger) {
-          e.dead = true; R.lives--; R.streak = 0; shakeT = 0.35;
-          if (R.lives <= 0) { gameOver(); break; }
+      const danger = cannon.x + 44;
+
+      if (isBossWave(R.wave)) {
+        if (R.banner < 1 && R.spawned < 1 && !boss) {
+          spawnBoss();
+          R.spawned = 1;
+        }
+        if (boss && boss.hp > 0) {
+          boss.hurtT = Math.max(0, boss.hurtT - dt);
+          boss.slowT = Math.max(0, boss.slowT - dt);
+          const bossSpeed = speedNow() * 0.24 * (boss.slowT > 0 ? 0.35 : 1);
+          boss.x -= bossSpeed * dt;
+          hint(boss, dt);
+
+          // Boss launches short interference missiles periodically
+          boss.missileT -= dt;
+          if (boss.missileT <= 0 && boss.x < W - 40) {
+            const count = boss.tier >= 2 ? 2 : 1;
+            for (let m = 0; m < count; m++) {
+              spawn({ preferShort: true, isMissile: true, startX: boss.x + 12 });
+            }
+            boss.missileT = Math.max(3.2, 5.2 - 0.35 * boss.tier);
+          }
+
+          // Boss reaches red line => instant Game Over
+          if (boss.x <= danger) {
+            recordWeakWord(boss.word, boss.vi);
+            R.lives = 0;
+            shakeT = 0.5;
+            gameOver();
+          }
+        }
+      } else {
+        if (R.banner < 1 && R.spawned < R.toSpawn) {
+          R.spawnT -= dt;
+          if (R.spawnT <= 0) { if (spawn()) { R.spawned++; R.spawnT = spawnGap(); } else R.spawnT = 0.3; }
         }
       }
+
+      if (state === "play") {
+        const speed = speedNow();
+        for (const e of enemies) {
+          if (e.dead) continue;
+          const mult = e.isMissile ? 1.15 : 1;
+          e.x -= speed * mult * dt;
+          hint(e, dt);
+          if (e.x <= danger) {
+            recordWeakWord(e.word, e.vi);
+            e.dead = true; R.lives--; R.streak = 0; shakeT = 0.35;
+            if (R.lives <= 0) { gameOver(); break; }
+          }
+        }
+      }
+
       if (state === "play") {
         if (R.upg.turret > 0) {
           R.turretT -= dt;
           if (R.turretT <= 0) { if (fireTurret()) R.turretT = Math.max(2.5, 8 - 1.3 * R.upg.turret); else R.turretT = 0.5; }
         }
         for (const s of shots) {
-          if (s.target.dead) { s.gone = true; continue; }
-          const c = center(s.target), dx = c.x - s.x, dy = c.y - s.y, d = Math.hypot(dx, dy);
-          if (d < 26) {
-            if (s.kind === "main") explode(s.target, false);
-            else {
-              s.target.x = Math.min(W + 30, s.target.x + W * 0.07); s.target.hits++;
-              if (s.target.hits >= TURRET_HITS) explode(s.target, true);
-            }
-            s.gone = true;
-          } else { const v = (s.kind === "main" ? 1150 : 850) * dt; s.x += dx / d * v; s.y += dy / d * v; }
+          if (s.target === boss) {
+            if (!boss || boss.hp <= 0) { s.gone = true; continue; }
+            const c = center(boss), dx = c.x - s.x, dy = c.y - s.y, d = Math.hypot(dx, dy);
+            if (d < 34) {
+              if (s.kind === "main") hitBoss();
+              else {
+                boss.slowT = 1.2;
+                boss.x = Math.min(W - boss.w * 0.45, boss.x + W * 0.015);
+              }
+              s.gone = true;
+            } else { const v = (s.kind === "main" ? 1150 : 850) * dt; s.x += dx / d * v; s.y += dy / d * v; }
+          } else {
+            if (s.target.dead) { s.gone = true; continue; }
+            const c = center(s.target), dx = c.x - s.x, dy = c.y - s.y, d = Math.hypot(dx, dy);
+            if (d < 26) {
+              if (s.kind === "main") explode(s.target, false);
+              else {
+                s.target.x = Math.min(W + 30, s.target.x + W * 0.07); s.target.hits++;
+                if (s.target.hits >= TURRET_HITS) explode(s.target, true);
+              }
+              s.gone = true;
+            } else { const v = (s.kind === "main" ? 1150 : 850) * dt; s.x += dx / d * v; s.y += dy / d * v; }
+          }
         }
         shots = shots.filter(s => !s.gone);
         enemies = enemies.filter(e => !e.dead);
+
         const live = enemies.filter(e => !e.targeted);
-        if (live.length && !shots.some(s => s.kind === "main")) {
-          const e = live.reduce((a, b) => (a.x < b.x ? a : b)), c = center(e);
-          const want = Math.atan2(c.y - cannonY(), c.x - cannon.x);
-          cannon.angle += (want - cannon.angle) * Math.min(1, 8 * dt);
+        if (!shots.some(s => s.kind === "main")) {
+          const aimTarget = live.length
+            ? live.reduce((a, b) => (a.x < b.x ? a : b))
+            : (boss && boss.hp > 0 ? boss : null);
+          if (aimTarget) {
+            const c = center(aimTarget);
+            const want = Math.atan2(c.y - cannonY(), c.x - cannon.x);
+            cannon.angle += (want - cannon.angle) * Math.min(1, 8 * dt);
+          }
         }
-        if (R.spawned >= R.toSpawn && !enemies.length && R.banner <= 0) openShop();
+
+        if (!isBossWave(R.wave) && R.spawned >= R.toSpawn && !enemies.length && R.banner <= 0) {
+          openShop();
+        }
       }
     }
     if (state !== "paused") {
@@ -1102,8 +1503,9 @@
     }
     const cm = comboMult(R.streak);
     hud.textContent =
-      `ĐỢT ${R.wave} · ĐIỂM ${R.score} · XU ${R.coins} · ${"♥".repeat(Math.max(R.lives, 0)) || "-"}` +
+      `ĐỢT ${R.wave}${isBossWave(R.wave) ? " [BOSS]" : ""} · ĐIỂM ${R.score} · XU ${R.coins} · ${"♥".repeat(Math.max(R.lives, 0)) || "-"}` +
       (R.streak >= 3 ? ` · CHUỖI x${cm} (${R.streak})` : "") + (R.curse ? ` · [${CURSES[R.curse].name}]` : "");
+    input.placeholder = "gõ từ tiếng anh... (bấm [Tab] để nghe phát âm)";
   }
 
   function roundRect(x, y, w, h, r) {
@@ -1183,6 +1585,64 @@
     ctx.restore();
   }
 
+  function drawBoss() {
+    if (!boss || boss.hp <= 0) return;
+    const { x, y, w, h } = boss;
+    ctx.save();
+    ctx.shadowColor = boss.hurtT > 0 ? "rgba(251, 191, 36, 0.7)" : "rgba(251, 113, 133, 0.45)";
+    ctx.shadowBlur = 22;
+
+    // Outer hull
+    ctx.fillStyle = boss.hurtT > 0 ? "rgba(55, 22, 46, 0.95)" : "rgba(22, 14, 38, 0.95)";
+    ctx.strokeStyle = boss.hurtT > 0 ? "#fbbf24" : "#fb7185";
+    ctx.lineWidth = 2.5;
+    roundRect(x, y, w, h, 14);
+    ctx.fill();
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Segmented HP bar at top of Boss
+    const barPad = 14;
+    const barW = w - barPad * 2;
+    const segGap = 3;
+    const segW = Math.max(4, (barW - segGap * (boss.maxHp - 1)) / boss.maxHp);
+    for (let i = 0; i < boss.maxHp; i++) {
+      ctx.fillStyle = i < boss.hp ? "#fb7185" : "rgba(255, 255, 255, 0.1)";
+      ctx.fillRect(x + barPad + i * (segW + segGap), y + 12, segW, 7);
+    }
+
+    // ASCII art crest
+    ctx.fillStyle = "rgba(251, 113, 133, 0.78)";
+    ctx.font = "10.5px monospace";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    const asciiTop = y + 26;
+    BOSS_ASCII.forEach((line, idx) => {
+      ctx.fillText(line, x + w / 2, asciiTop + idx * 11.5);
+    });
+
+    // Core Word Box inside Boss
+    const coreY = y + h - 82;
+    const coreH = 66;
+    ctx.fillStyle = boss.inZone ? "rgba(30, 27, 62, 0.98)" : "rgba(13, 11, 28, 0.95)";
+    ctx.strokeStyle = boss.weak ? "#fbbf24" : (boss.inZone ? "#38bdf8" : "#a78bfa");
+    ctx.lineWidth = 2;
+    roundRect(x + 12, coreY, w - 24, coreH, 9);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = boss.inZone ? "#e0f2fe" : "#f8fafc";
+    ctx.font = "bold 17px monospace";
+    ctx.fillText(boss.shown, x + w / 2, coreY + 24);
+
+    ctx.fillStyle = "#c4b5fd";
+    ctx.font = "12.5px monospace";
+    ctx.fillText(boss.vi, x + w / 2, coreY + 47);
+
+    ctx.restore();
+  }
+
   function draw() {
     ctx.clearRect(0, 0, W, H);
     ctx.save();
@@ -1206,7 +1666,7 @@
     }
 
     const dangerX = cannon.x + 44;
-    const hintX = dangerX + hintZoneWidth();
+    const hintX = dangerX + hintZoneWidth(false);
 
     ctx.strokeStyle = "rgba(56, 189, 248, 0.25)";
     ctx.lineWidth = 1;
@@ -1231,25 +1691,42 @@
     ctx.setLineDash([]);
 
     drawCannon();
+    drawBoss();
 
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     for (const e of enemies) {
       const y = laneY(e.lane) - BLOCK_H / 2;
-      const activeGlow = e.targeted || e.flash > 0 || e.inZone;
+      const activeGlow = e.targeted || e.flash > 0 || e.inZone || e.weak;
 
       ctx.save();
       if (activeGlow) {
-        ctx.shadowColor = e.targeted ? "rgba(167, 139, 250, 0.55)" : "rgba(56, 189, 248, 0.35)";
+        ctx.shadowColor = e.weak
+          ? "rgba(251, 191, 36, 0.45)"
+          : (e.targeted ? "rgba(167, 139, 250, 0.55)" : "rgba(56, 189, 248, 0.35)");
         ctx.shadowBlur = 14;
       }
-      ctx.fillStyle = e.inZone ? "rgba(24, 24, 52, 0.96)" : "rgba(19, 16, 40, 0.94)";
-      ctx.strokeStyle = e.targeted ? "#a78bfa" : (e.inZone ? "#38bdf8" : "#3b3566");
-      ctx.lineWidth = (e.targeted || e.flash > 0) ? 2.5 : 1.5;
+      ctx.fillStyle = e.isMissile
+        ? "rgba(38, 16, 36, 0.95)"
+        : (e.inZone ? "rgba(24, 24, 52, 0.96)" : "rgba(19, 16, 40, 0.94)");
+      ctx.strokeStyle = e.weak
+        ? "#fbbf24"
+        : (e.isMissile ? "#fb7185" : (e.targeted ? "#a78bfa" : (e.inZone ? "#38bdf8" : "#3b3566")));
+      ctx.lineWidth = (e.targeted || e.flash > 0 || e.weak) ? 2.5 : 1.5;
       roundRect(e.x, y, e.w, BLOCK_H, 8);
       ctx.fill();
       ctx.stroke();
       ctx.restore();
+
+      if (e.weak) {
+        ctx.fillStyle = "#fbbf24";
+        ctx.font = "bold 9px monospace";
+        ctx.fillText("★ TỪ YẾU (x2)", e.x + e.w / 2, y - 7);
+      } else if (e.isMissile) {
+        ctx.fillStyle = "#fb7185";
+        ctx.font = "bold 9px monospace";
+        ctx.fillText("▼ TÊN LỬA", e.x + e.w / 2, y - 7);
+      }
 
       ctx.fillStyle = e.inZone ? "#e0f2fe" : "#f8fafc";
       ctx.font = "bold 18px monospace";
@@ -1296,18 +1773,20 @@
     if (state === "play" && R.banner > 0) {
       ctx.save();
       ctx.globalAlpha = Math.min(1, R.banner / 0.6);
-      ctx.shadowColor = "rgba(167, 139, 250, 0.5)";
+      ctx.shadowColor = isBossWave(R.wave) ? "rgba(251, 113, 133, 0.65)" : "rgba(167, 139, 250, 0.5)";
       ctx.shadowBlur = 20;
-      ctx.fillStyle = "#f1effc";
-      ctx.font = "bold 42px monospace";
-      ctx.fillText(`ĐỢT ${R.wave}`, W / 2, H / 2 - 12);
+      ctx.fillStyle = isBossWave(R.wave) ? "#fb7185" : "#f1effc";
+      ctx.font = "bold 40px monospace";
+      ctx.fillText(isBossWave(R.wave) ? `ĐỢT ${R.wave} — BOSS!` : `ĐỢT ${R.wave}`, W / 2, H / 2 - 12);
       ctx.shadowBlur = 0;
       ctx.fillStyle = "#c4b5fd";
       ctx.font = "13px monospace";
       ctx.fillText(
-        R.curse
-          ? `lời nguyền: ${CURSES[R.curse].name} — ${CURSES[R.curse].desc} (xu x${CURSE_COIN_MULT})`
-          : `${R.toSpawn} từ vựng đang tiến tới`,
+        isBossWave(R.wave)
+          ? "bắn hạ lõi từ vựng của Boss & đánh chặn tên lửa!"
+          : (R.curse
+              ? `lời nguyền: ${CURSES[R.curse].name} — ${CURSES[R.curse].desc} (xu x${CURSE_COIN_MULT})`
+              : `${R.toSpawn} từ vựng đang tiến tới`),
         W / 2, H / 2 + 28
       );
       ctx.restore();
@@ -1340,11 +1819,24 @@
     const v = norm(input.value);
     if (!v) return;
     const hit = enemies.filter(e => !e.dead && !e.targeted && norm(e.word) === v).sort((a, b) => a.x - b.x)[0];
-    if (hit) { fire(hit); input.value = ""; }
+    if (hit) { fire(hit); input.value = ""; return; }
+    if (boss && boss.hp > 0 && !boss.targeted && norm(boss.word) === v) {
+      fire(boss);
+      input.value = "";
+    }
   });
   input.addEventListener("keydown", e => {
     if (e.key === "Enter" && input.value && state === "play") {
       R.streak = 0;
+      // Log front-most active target into Sổ Tử Huyệt when user submits wrong spelling
+      const frontEnemy = enemies.filter(en => !en.dead && !en.targeted).sort((a, b) => a.x - b.x)[0];
+      if (frontEnemy) {
+        frontEnemy.weak = true;
+        recordWeakWord(frontEnemy.word, frontEnemy.vi);
+      } else if (boss && boss.hp > 0) {
+        boss.weak = true;
+        recordWeakWord(boss.word, boss.vi);
+      }
       input.classList.remove("shake"); void input.offsetWidth; input.classList.add("shake");
       input.value = "";
     }

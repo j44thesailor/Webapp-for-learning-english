@@ -1,102 +1,409 @@
 <!doctype html>
-<html lang="en">
+<html lang="vi">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Word Arcade</title>
+<title>Word Arcade — Học Tiếng Anh Qua Trò Chơi</title>
 <style>
-  :root { --fg:#000; --bg:#fff; --mute:#777; --line:#000; --ease:cubic-bezier(.7,0,.2,1); }
+  :root {
+    --bg: #090812;
+    --bg-panel: #0e0c1d;
+    --bg-card: #15122b;
+    --bg-card-hover: #1e1a3d;
+    --fg: #f1effc;
+    --fg-soft: #c4b5fd;
+    --mute: #7c75a8;
+    --line: #252044;
+    --line-bright: #4c438a;
+    --accent: #a78bfa;
+    --accent-cyan: #38bdf8;
+    --danger: #fb7185;
+    --gold: #fbbf24;
+    --ease: cubic-bezier(.7, 0, .2, 1);
+  }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { height: 100%; }
   body {
-    background: var(--bg); color: var(--fg);
-    font-family: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
-    display: grid; grid-template-columns: 300px 1fr; height: 100vh;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+    display: grid;
+    grid-template-columns: 310px 1fr;
+    height: 100vh;
     transition: grid-template-columns .7s var(--ease);
+    overflow: hidden;
   }
   body.game { grid-template-columns: 0px 1fr; }
 
-  /* LEFT: menu */
-  aside { border-right: 1px solid var(--line); overflow: hidden; min-width: 0; transition: opacity .3s, border-color .7s; }
-  body.game aside { opacity: 0; pointer-events: none; border-right-color: transparent; }
-  .aside-in { width: 299px; padding: 28px 24px; display: flex; flex-direction: column; gap: 10px; height: 100%; overflow-y: auto; }
-  h1 { font-size: 20px; letter-spacing: .08em; text-transform: uppercase; }
-  .sub { font-size: 11px; color: var(--mute); margin-bottom: 18px; }
-  #modes { display: flex; flex-direction: column; gap: 10px; }
-  .mode {
-    font: inherit; font-size: 13px; text-align: left; cursor: pointer;
-    padding: 12px 14px; background: var(--bg); color: var(--fg);
-    border: 1px solid var(--line); display: flex; justify-content: space-between;
-    transition: background .12s, color .12s;
+  /* LEFT: sidebar menu */
+  aside {
+    background: var(--bg-panel);
+    border-right: 1px solid var(--line);
+    overflow: hidden;
+    min-width: 0;
+    transition: opacity .3s, border-color .7s;
   }
-  .mode:hover, .mode:focus-visible { background: var(--fg); color: var(--bg); outline: none; }
-  .mode .idx { color: var(--mute); }
-  .mode:hover .idx, .mode:focus-visible .idx { color: #aaa; }
-  #status { margin-top: auto; font-size: 11px; color: var(--mute); min-height: 1.4em; }
+  body.game aside { opacity: 0; pointer-events: none; border-right-color: transparent; }
+  .aside-in {
+    width: 309px;
+    padding: 26px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    height: 100%;
+    overflow-y: auto;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .brand-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 12px var(--accent);
+    flex-shrink: 0;
+  }
+  h1 {
+    font-size: 18px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--fg);
+  }
+  .sub {
+    font-size: 11px;
+    color: var(--mute);
+    margin-bottom: 16px;
+    padding-left: 19px;
+  }
+  .sec-label {
+    font-size: 10px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--mute);
+    margin: 4px 0 4px 4px;
+  }
+  #modes { display: flex; flex-direction: column; gap: 7px; }
+  .mode {
+    font: inherit;
+    font-size: 12.5px;
+    text-align: left;
+    cursor: pointer;
+    padding: 11px 14px;
+    background: rgba(21, 18, 43, 0.55);
+    color: var(--fg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background .16s, border-color .16s, transform .12s, box-shadow .16s;
+  }
+  .mode:hover, .mode:focus-visible {
+    background: var(--bg-card-hover);
+    border-color: var(--accent);
+    box-shadow: 0 0 18px rgba(167, 139, 250, 0.16);
+    transform: translateX(2px);
+    outline: none;
+  }
+  .mode.ready {
+    border-color: rgba(167, 139, 250, 0.38);
+  }
+  .mode .idx {
+    font-size: 11px;
+    color: var(--mute);
+  }
+  .mode.ready .idx {
+    color: var(--accent-cyan);
+  }
+  .mode:hover .idx, .mode:focus-visible .idx { color: var(--fg-soft); }
+  .aside-tools {
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .menu-upload {
+    width: 100%;
+    text-align: center;
+    font-size: 12px;
+  }
+  #status {
+    padding: 10px 12px;
+    font-size: 11px;
+    color: var(--fg-soft);
+    min-height: 2.6em;
+    border-radius: 6px;
+    background: rgba(21, 18, 43, 0.4);
+    border: 1px solid transparent;
+  }
+  #status:not(:empty) { border-color: var(--line); }
 
-  /* RIGHT */
-  main { padding: 28px; display: flex; flex-direction: column; gap: 10px; min-width: 0; min-height: 0; transition: padding .7s var(--ease); }
+  /* RIGHT: ASCII galaxy stage & game viewport */
+  main {
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+    min-height: 0;
+    transition: padding .7s var(--ease);
+    background: radial-gradient(circle at 60% 45%, #131029 0%, #090812 75%);
+  }
   body.game main { padding: 12px; }
-  #frame { flex: 1; border: 1px solid var(--line); position: relative; overflow: hidden; min-height: 0; }
+  #frame {
+    flex: 1;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+    min-height: 0;
+    background:
+      radial-gradient(ellipse at 52% 48%, rgba(139, 92, 246, 0.14) 0%, rgba(56, 189, 248, 0.04) 36%, rgba(9, 8, 18, 0.96) 76%);
+    box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.65);
+  }
+  #floatLayer {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    overflow: hidden;
+    transition: opacity .4s;
+  }
+  body.game #floatLayer { opacity: 0; }
+  .fword {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform: translate3d(-9999px, -9999px, 0);
+    will-change: transform, opacity;
+    text-align: center;
+    white-space: nowrap;
+    user-select: none;
+  }
+  .fword .en {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: .04em;
+    color: var(--fg-soft);
+    text-shadow: 0 0 12px rgba(167, 139, 250, 0.45);
+  }
+  .fword.cyan .en {
+    color: #bae6fd;
+    text-shadow: 0 0 12px rgba(56, 189, 248, 0.45);
+  }
+  .fword .vi {
+    display: block;
+    font-size: 10.5px;
+    color: var(--mute);
+    margin-top: 2px;
+  }
   #art {
-    position: absolute; top: 0; left: 0; transform-origin: 0 0;
-    font-size: 12px; line-height: 1; white-space: pre; color: var(--fg);
-    user-select: none; will-change: transform; transition: opacity .4s;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 2;
+    transform-origin: 0 0;
+    font-size: 12px;
+    line-height: 1;
+    white-space: pre;
+    color: #e9e5ff;
+    text-shadow: 0 0 10px rgba(167, 139, 250, 0.35), 0 0 24px rgba(56, 189, 248, 0.14);
+    user-select: none;
+    will-change: transform;
+    transition: opacity .4s;
   }
   body.game #art { opacity: 0; }
-  #meta { font-size: 11px; color: var(--mute); display: flex; justify-content: space-between; }
+  #meta {
+    font-size: 11px;
+    color: var(--mute);
+    display: flex;
+    justify-content: space-between;
+    padding: 0 4px;
+  }
   body.game #meta { display: none; }
 
   /* GAME layer */
-  #game { position: absolute; inset: 0; width: 100%; height: 100%; visibility: hidden; opacity: 0; }
+  #game {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    width: 100%;
+    height: 100%;
+    visibility: hidden;
+    opacity: 0;
+  }
   body.game #game { visibility: visible; opacity: 1; transition: opacity .4s .5s; }
   #bar {
-    position: absolute; top: 0; left: 0; right: 0; z-index: 3;
-    display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
-    padding: 12px 14px; visibility: hidden; opacity: 0;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding: 12px 14px;
+    background: linear-gradient(180deg, rgba(9, 8, 18, 0.9) 0%, rgba(9, 8, 18, 0) 100%);
+    visibility: hidden;
+    opacity: 0;
   }
   body.game #bar, body.game #answer { visibility: visible; opacity: 1; transition: opacity .4s .5s; }
-  .grp { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .grp { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .btn, select.btn {
-    font: inherit; font-size: 12px; cursor: pointer; background: var(--bg); color: var(--fg);
-    border: 1px solid var(--line); padding: 8px 12px; transition: background .12s, color .12s;
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    background: rgba(21, 18, 43, 0.85);
+    color: var(--fg);
+    border: 1px solid var(--line-bright);
+    border-radius: 7px;
+    padding: 7px 12px;
+    backdrop-filter: blur(6px);
+    transition: background .15s, border-color .15s, color .15s, box-shadow .15s;
   }
-  .btn:hover, .btn:focus-visible, .btn.on { background: var(--fg); color: var(--bg); outline: none; }
-  select.btn:hover { background: var(--bg); color: var(--fg); }
-  #hud { font-size: 12px; letter-spacing: .06em; white-space: nowrap; }
+  .btn:hover, .btn:focus-visible, .btn.on {
+    background: rgba(167, 139, 250, 0.22);
+    border-color: var(--accent);
+    color: #fff;
+    box-shadow: 0 0 14px rgba(167, 139, 250, 0.25);
+    outline: none;
+  }
+  .btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+    box-shadow: none;
+  }
+  select.btn option {
+    background: #141129;
+    color: var(--fg);
+  }
+  #hud {
+    font-size: 12px;
+    letter-spacing: .05em;
+    white-space: nowrap;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: rgba(21, 18, 43, 0.8);
+    border: 1px solid var(--line);
+    color: var(--fg);
+  }
   #vocabInfo { font-size: 11px; color: var(--mute); }
+
   #answer {
-    position: absolute; bottom: 22px; left: 50%; transform: translateX(-50%); z-index: 3;
-    width: min(420px, 80%); padding: 12px 14px; font: inherit; font-size: 16px; text-align: center;
-    border: 2px solid var(--line); background: var(--bg); color: var(--fg); outline: none;
-    visibility: hidden; opacity: 0;
+    position: absolute;
+    bottom: 22px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 3;
+    width: min(440px, 84%);
+    padding: 13px 18px;
+    font: inherit;
+    font-size: 16px;
+    text-align: center;
+    border: 1.5px solid var(--accent);
+    border-radius: 10px;
+    background: rgba(16, 14, 34, 0.92);
+    color: #fff;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.55), 0 0 20px rgba(167, 139, 250, 0.2);
+    backdrop-filter: blur(8px);
+    outline: none;
+    visibility: hidden;
+    opacity: 0;
   }
-  #answer.shake { animation: shake .3s; }
-  @keyframes shake { 20%{transform:translateX(calc(-50% - 8px))} 40%{transform:translateX(calc(-50% + 8px))} 60%{transform:translateX(calc(-50% - 5px))} 80%{transform:translateX(calc(-50% + 5px))} }
+  #answer::placeholder { color: var(--mute); font-size: 13.5px; }
+  #answer:focus {
+    border-color: var(--accent-cyan);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6), 0 0 24px rgba(56, 189, 248, 0.28);
+  }
+  #answer.shake { animation: shake .3s; border-color: var(--danger); }
+  @keyframes shake {
+    20%{transform:translateX(calc(-50% - 8px))}
+    40%{transform:translateX(calc(-50% + 8px))}
+    60%{transform:translateX(calc(-50% - 5px))}
+    80%{transform:translateX(calc(-50% + 5px))}
+  }
 
   /* overlay: shop / workshop / game over */
-  #ov { position: absolute; inset: 0; z-index: 4; display: none; background: rgba(255,255,255,.95); overflow-y: auto; }
-  #ov.on { display: block; }
-  #ovBody { width: min(680px, 94%); margin: 0 auto; padding: 64px 0 40px; display: flex; flex-direction: column; gap: 10px; }
-  #ovBody h2 { font-size: 22px; letter-spacing: .12em; }
-  #ovBody h3 { font-size: 12px; letter-spacing: .12em; margin-top: 14px; color: var(--mute); font-weight: normal; }
-  #ovBody .m { font-size: 12px; color: var(--mute); line-height: 1.7; }
-  .opt {
-    display: block; width: 100%; text-align: left; font: inherit; cursor: pointer;
-    padding: 12px 14px; background: var(--bg); color: var(--fg); border: 1px solid var(--line);
-    transition: background .12s, color .12s;
+  #ov {
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    display: none;
+    background: rgba(9, 8, 18, 0.88);
+    backdrop-filter: blur(12px);
+    overflow-y: auto;
   }
-  .opt .r { display: flex; justify-content: space-between; font-size: 13px; }
-  .opt .d { font-size: 11px; color: var(--mute); margin-top: 4px; }
-  .opt:hover:not(:disabled) { background: var(--fg); color: var(--bg); }
-  .opt:hover:not(:disabled) .d { color: #bbb; }
-  .opt:disabled { color: #aaa; border-color: #ccc; cursor: default; }
-  .opt:disabled .d { color: #bbb; }
+  #ov.on { display: block; }
+  #ovBody {
+    width: min(680px, 94%);
+    margin: 0 auto;
+    padding: 64px 0 44px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  #ovBody h2 {
+    font-size: 21px;
+    letter-spacing: .1em;
+    color: var(--fg);
+  }
+  #ovBody h3 {
+    font-size: 11px;
+    letter-spacing: .14em;
+    margin-top: 14px;
+    color: var(--accent);
+    font-weight: normal;
+  }
+  #ovBody .m {
+    font-size: 12.5px;
+    color: var(--fg-soft);
+    line-height: 1.75;
+  }
+  .opt {
+    display: block;
+    width: 100%;
+    text-align: left;
+    font: inherit;
+    cursor: pointer;
+    padding: 13px 16px;
+    background: var(--bg-card);
+    color: var(--fg);
+    border: 1px solid var(--line-bright);
+    border-radius: 9px;
+    transition: background .15s, border-color .15s, transform .1s, box-shadow .15s;
+  }
+  .opt .r {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    gap: 12px;
+  }
+  .opt .r span { color: var(--accent-cyan); font-size: 12px; }
+  .opt .d { font-size: 11.5px; color: var(--mute); margin-top: 5px; }
+  .opt:hover:not(:disabled) {
+    background: var(--bg-card-hover);
+    border-color: var(--accent);
+    box-shadow: 0 0 20px rgba(167, 139, 250, 0.18);
+    transform: translateY(-1px);
+  }
+  .opt:hover:not(:disabled) .d { color: var(--fg-soft); }
+  .opt:disabled {
+    opacity: 0.45;
+    border-color: var(--line);
+    cursor: default;
+  }
   .row { display: flex; gap: 10px; flex-wrap: wrap; }
 
   @media (max-width: 760px) {
-    body { grid-template-columns: 1fr; grid-template-rows: auto 1fr; height: auto; min-height: 100vh; }
-    body.game { grid-template-columns: 1fr; grid-template-rows: 0px 1fr; height: 100vh; }
+    body { grid-template-columns: 1fr; grid-template-rows: auto 1fr; height: auto; min-height: 100vh; overflow: auto; }
+    body.game { grid-template-columns: 1fr; grid-template-rows: 0px 1fr; height: 100vh; overflow: hidden; }
     aside { border-right: 0; border-bottom: 1px solid var(--line); }
     .aside-in { width: auto; }
     main { height: 70vh; }
@@ -108,41 +415,47 @@
 
 <aside>
   <div class="aside-in">
-    <h1>Word Arcade</h1>
-    <div class="sub">learn english by playing</div>
+    <div class="brand"><span class="brand-dot"></span><h1>Word Arcade</h1></div>
+    <div class="sub">học tiếng anh qua trò chơi</div>
+    <div class="sec-label">Chế độ chơi</div>
     <div id="modes"></div>
-    <div id="status"></div>
+    <div class="aside-tools">
+      <button class="btn menu-upload" id="menuUpload">+ Nạp file từ vựng</button>
+      <div id="status"></div>
+    </div>
   </div>
 </aside>
 
 <main>
   <div id="frame">
+    <div id="floatLayer"></div>
     <pre id="art"></pre>
     <canvas id="game"></canvas>
 
     <div id="bar">
       <div class="grp">
         <button class="btn" id="back">&larr; Menu</button>
-        <button class="btn" id="workshop">Workshop</button>
+        <button class="btn" id="workshop">Xưởng Nâng Cấp</button>
       </div>
       <div id="hud"></div>
       <div class="grp">
         <span id="vocabInfo"></span>
-        <select class="btn" id="diff" title="Starting difficulty (rises every wave)">
-          <option value="easy">Easy</option>
-          <option value="medium">Medium</option>
-          <option value="hard">Hard</option>
+        <select class="btn" id="diff" title="Độ khó khởi đầu (tăng nhẹ sau mỗi đợt)">
+          <option value="han" selected>Độ khó: Hân</option>
+          <option value="easy">Độ khó: Dễ</option>
+          <option value="medium">Độ khó: Vừa</option>
+          <option value="hard">Độ khó: Khó</option>
         </select>
-        <button class="btn" id="upload">Upload vocab</button>
+        <button class="btn" id="upload">Nạp từ vựng</button>
         <input type="file" id="file" accept=".txt,.csv,.tsv,.json,text/plain" hidden>
       </div>
     </div>
 
-    <input id="answer" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="type the word...">
+    <input id="answer" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="gõ từ tiếng anh tương ứng...">
 
     <div id="ov"><div id="ovBody"></div></div>
   </div>
-  <div id="meta"><span id="counter"></span><span>auto-cycle</span></div>
+  <div id="meta"><span id="counter"></span><span id="vocabMeta"></span></div>
 </main>
 
 <script src="arts.js"></script>
@@ -153,60 +466,41 @@
   const frame = $("#frame");
 
   /* =====================================================
-   *  ASCII DISPLAY
+   *  ASCII DISPLAY (static Art 2 only)
    * ===================================================== */
-  const HOLD_MS = 8000, NOISE_MS = 700, MAX_SCALE = 4;
-  const GLYPHS = "#%&@$*+=-:;.,/\\|<>?!0123456789";
-  const pre = $("#art"), counter = $("#counter");
+  const MAX_SCALE = 4;
+  const pre = $("#art"), counter = $("#counter"), vocabMeta = $("#vocabMeta");
   const arts = window.ARTS || [];
-  let cur = 0, busy = false, dims = [];
+  const artText = arts[1] || arts[0] || "";
+  let artDim = null;
+  let artBox = { left: 0, right: 0, width: 0, height: 0 };
 
-  function measure() {
+  function measureArt() {
+    if (!artText) return;
     pre.style.transform = "none";
-    dims = arts.map(t => { pre.textContent = t; return { w: pre.offsetWidth, h: pre.offsetHeight }; });
+    pre.textContent = artText;
+    artDim = { w: pre.offsetWidth, h: pre.offsetHeight };
   }
-  function fit(i) {
-    if (!dims[i]) return;
-    const { w, h } = dims[i], pad = 16;
-    const s = Math.min((frame.clientWidth - pad * 2) / w, (frame.clientHeight - pad * 2) / h, MAX_SCALE);
-    const x = (frame.clientWidth - w * s) / 2, y = (frame.clientHeight - h * s) / 2;
+  function fitArt() {
+    if (!artDim) return;
+    const { w, h } = artDim, pad = 20;
+    const fw = frame.clientWidth, fh = frame.clientHeight;
+    const s = Math.min((fw - pad * 2) / w, (fh - pad * 2) / h, MAX_SCALE);
+    const rw = w * s, rh = h * s;
+    const x = (fw - rw) / 2, y = (fh - rh) / 2;
     pre.style.transform = `translate(${x}px, ${y}px) scale(${s})`;
+    artBox = { left: x, right: x + rw, width: rw, height: rh };
   }
-  const label = i => `art ${String(i + 1).padStart(2, "0")} / ${String(arts.length).padStart(2, "0")}`;
-  function show(i) { pre.textContent = arts[i]; fit(i); counter.textContent = label(i); }
-  function noisy(text, th, p) {
-    let out = "";
-    for (let k = 0; k < text.length; k++) {
-      const c = text[k];
-      out += (c === "\n" || th[k] > p) ? c : GLYPHS[(Math.random() * GLYPHS.length) | 0];
-    }
-    return out;
+  if (artText) {
+    measureArt();
+    fitArt();
+    counter.textContent = arts[1] ? "tác phẩm 02" : "tác phẩm 01";
+  } else {
+    pre.textContent = "Không tìm thấy ASCII art trong arts.js";
   }
-  function phase(i, from, to) {
-    return new Promise(res => {
-      const text = arts[i], th = Float32Array.from({ length: text.length }, Math.random);
-      const t0 = performance.now(); let last = 0;
-      (function tick(now) {
-        const t = Math.min((now - t0) / NOISE_MS, 1);
-        if (now - last > 33) { last = now; pre.textContent = noisy(text, th, from + (to - from) * t); }
-        t < 1 ? requestAnimationFrame(tick) : res();
-      })(t0);
-    });
-  }
-  async function next() {
-    if (busy || arts.length < 2 || body.classList.contains("game")) return;
-    busy = true;
-    const nxt = (cur + 1) % arts.length;
-    await phase(cur, 0, 1);
-    fit(nxt); counter.textContent = label(nxt);
-    await phase(nxt, 1, 0);
-    cur = nxt; show(cur); busy = false;
-  }
-  if (arts.length) { measure(); show(cur); setInterval(next, HOLD_MS + NOISE_MS * 2); }
-  else pre.textContent = "No art found in arts.js";
 
   /* =====================================================
-   *  VOCAB
+   *  VOCAB & FLOATING IMPORTED WORDS ON MENU
    * ===================================================== */
   const DEFAULT_VOCAB = [
     ["apple","quả táo"],["knowledge","kiến thức"],["journey","hành trình"],["ancient","cổ xưa"],
@@ -219,10 +513,152 @@
     ["curious","tò mò"],["essential","thiết yếu"],
   ];
   let vocab = DEFAULT_VOCAB.slice();
+  let importedVocab = [];
   try {
     const saved = JSON.parse(localStorage.getItem("wa_vocab") || "null");
-    if (Array.isArray(saved) && saved.length) vocab = saved;
+    if (Array.isArray(saved) && saved.length) {
+      vocab = saved;
+      importedVocab = saved.slice();
+    }
   } catch (e) {}
+
+  function updateVocabMeta() {
+    vocabMeta.textContent = importedVocab.length
+      ? `bộ từ đã nạp: ${importedVocab.length} từ`
+      : `bộ từ mặc định: ${vocab.length} từ`;
+  }
+  updateVocabMeta();
+
+  /* ---- Floating words on left & right sides of Art 2 ---- */
+  const floatLayer = $("#floatLayer");
+  let floatItems = [];
+  let floatBag = [];
+  let floatSpawnT = 0;
+  let floatLast = performance.now();
+  let floatSideToggle = 0;
+
+  function nextFloatPair() {
+    if (!importedVocab.length) return null;
+    if (!floatBag.length) {
+      floatBag = importedVocab.map((_, i) => i);
+      for (let i = floatBag.length - 1; i > 0; i--) {
+        const j = (Math.random() * (i + 1)) | 0;
+        [floatBag[i], floatBag[j]] = [floatBag[j], floatBag[i]];
+      }
+    }
+    return importedVocab[floatBag.pop()];
+  }
+
+  function clearFloatingWords() {
+    floatItems.forEach(it => it.el.remove());
+    floatItems = [];
+    floatBag = [];
+    floatSpawnT = 0;
+  }
+
+  function pickSideX(side, elW) {
+    const fw = frame.clientWidth;
+    const pad = 14;
+    if (side === "left") {
+      const maxR = Math.max(pad + 60, artBox.left - 14);
+      const minL = pad;
+      const span = Math.max(0, maxR - minL - elW);
+      return minL + Math.random() * span;
+    } else {
+      const minL = Math.min(fw - pad - 60, artBox.right + 14);
+      const maxR = fw - pad;
+      const span = Math.max(0, maxR - minL - elW);
+      return minL + Math.random() * span;
+    }
+  }
+
+  function spawnFloatingWord(initialY) {
+    const pair = nextFloatPair();
+    if (!pair) return;
+    const fw = frame.clientWidth, fh = frame.clientHeight;
+    if (!fw || !fh) return;
+
+    const side = (floatSideToggle++ % 2 === 0) ? "left" : "right";
+    const el = document.createElement("div");
+    el.className = "fword" + (Math.random() < 0.45 ? " cyan" : "");
+
+    const enSpan = document.createElement("span");
+    enSpan.className = "en";
+    enSpan.textContent = pair[0];
+
+    const viSpan = document.createElement("span");
+    viSpan.className = "vi";
+    viSpan.textContent = pair[1];
+
+    el.appendChild(enSpan);
+    el.appendChild(viSpan);
+    floatLayer.appendChild(el);
+
+    const elW = el.offsetWidth || 80;
+    const elH = el.offsetHeight || 30;
+    const baseX = pickSideX(side, elW);
+    const y = typeof initialY === "number" ? initialY : fh + elH + Math.random() * 24;
+
+    floatItems.push({
+      el, side, baseX, y, h: elH,
+      vy: 20 + Math.random() * 18,
+      amp: 5 + Math.random() * 8,
+      freq: 0.7 + Math.random() * 0.8,
+      phase: Math.random() * Math.PI * 2,
+      maxAlpha: 0.55 + Math.random() * 0.35,
+      t: 0,
+    });
+  }
+
+  function seedFloatingWords() {
+    clearFloatingWords();
+    if (!importedVocab.length) return;
+    const fh = frame.clientHeight || 600;
+    const count = Math.min(18, Math.max(8, importedVocab.length));
+    for (let i = 0; i < count; i++) {
+      const y = (fh * (i + 0.5)) / count;
+      spawnFloatingWord(y);
+    }
+  }
+
+  function tickFloatingWords(now) {
+    requestAnimationFrame(tickFloatingWords);
+    const dt = Math.min((now - floatLast) / 1000, 0.05);
+    floatLast = now;
+
+    if (!importedVocab.length || body.classList.contains("game")) return;
+
+    const fh = frame.clientHeight;
+    const targetCount = Math.min(20, Math.max(10, importedVocab.length));
+    floatSpawnT -= dt;
+    if (floatItems.length < targetCount && floatSpawnT <= 0) {
+      spawnFloatingWord();
+      floatSpawnT = 0.65 + Math.random() * 0.5;
+    }
+
+    for (let i = floatItems.length - 1; i >= 0; i--) {
+      const it = floatItems[i];
+      it.t += dt;
+      it.y -= it.vy * dt;
+      const sway = Math.sin(it.t * it.freq + it.phase) * it.amp;
+      const x = it.baseX + sway;
+
+      // Smooth fade-in from bottom and fade-out near top
+      const fadeIn = Math.min(1, Math.max(0, (fh - it.y) / 90));
+      const fadeOut = Math.min(1, Math.max(0, (it.y + it.h) / 110));
+      const alpha = it.maxAlpha * fadeIn * fadeOut;
+
+      it.el.style.transform = `translate3d(${x.toFixed(1)}px, ${it.y.toFixed(1)}px, 0)`;
+      it.el.style.opacity = alpha.toFixed(3);
+
+      if (it.y + it.h < -10) {
+        it.el.remove();
+        floatItems.splice(i, 1);
+      }
+    }
+  }
+  if (importedVocab.length) seedFloatingWords();
+  requestAnimationFrame(tickFloatingWords);
 
   function parseVocab(text, filename) {
     text = text.replace(/^\uFEFF/, "");
@@ -264,11 +700,11 @@
    *  META PROGRESSION (persists across runs)
    * ===================================================== */
   const META_ITEMS = [
-    { id: "armor",  kind: "unlock", name: "Unlock: Armor",       desc: "adds Armor to the upgrade pool",           cost: 20 },
-    { id: "turret", kind: "unlock", name: "Unlock: Auto-Turret", desc: "adds Auto-Turret to the upgrade pool",     cost: 40 },
-    { id: "curses", kind: "unlock", name: "Unlock: Curses",      desc: "optional wave curse: coins x1.5",          cost: 30 },
-    { id: "life",   kind: "perk",   name: "Extra Heart",         desc: "+1 starting life",   max: 2, costs: [40, 90] },
-    { id: "seed",   kind: "perk",   name: "Seed Money",          desc: "+15 starting coins", max: 3, costs: [15, 30, 50] },
+    { id: "armor",  kind: "unlock", name: "Mở khóa: Giáp Bảo Vệ",      desc: "thêm Giáp Bảo Vệ vào danh sách nâng cấp",       cost: 20 },
+    { id: "turret", kind: "unlock", name: "Mở khóa: Tháp Pháo Phụ",     desc: "thêm Tháp Pháo Tự Động vào danh sách nâng cấp", cost: 40 },
+    { id: "curses", kind: "unlock", name: "Mở khóa: Lời Nguyền",        desc: "chọn lời nguyền mỗi đợt để nhận xu x1.5",       cost: 30 },
+    { id: "life",   kind: "perk",   name: "Thêm Tim Khởi Đầu",          desc: "+1 mạng mỗi khi bắt đầu lượt chơi",  max: 2, costs: [40, 90] },
+    { id: "seed",   kind: "perk",   name: "Vốn Khởi Nghiệp",            desc: "+15 xu mỗi khi bắt đầu lượt chơi",   max: 3, costs: [15, 30, 50] },
   ];
   const defaultMeta = () => ({ shards: 0, bestScore: 0, bestWave: 0, unlocked: {}, perks: {} });
   let meta = defaultMeta();
@@ -277,65 +713,79 @@
   const perk = id => meta.perks[id] || 0;
 
   /* =====================================================
-   *  GAME 1 — WORD CANNON (roguelike)
+   *  GAME 1 — PHÁO ĐÀI TỪ VỰNG (Word Cannon)
    * ===================================================== */
-  // ---- tunables ----
-  // hint = how far from the cannon (fraction of screen width) a block starts blinking its hidden letters;
-  // it shrinks by 0.01 each wave (min 0.15)
   const DIFF = {
-    easy:   { hide: 0.25, speed: 1,   hint: 0.5 },
-    medium: { hide: 0.45, speed: 1.1, hint: 0.4 },
-    hard:   { hide: 0.7,  speed: 1.2, hint: 0.3 },
+    han:    { hide: 0.25, speed: 0.32, hint: 0.20, waveSpeed: 0.025 },
+    easy:   { hide: 0.28, speed: 0.90, hint: 0.24, waveSpeed: 0.05  },
+    medium: { hide: 0.45, speed: 1.05, hint: 0.18, waveSpeed: 0.06  },
+    hard:   { hide: 0.70, speed: 1.20, hint: 0.13, waveSpeed: 0.06  },
   };
-  const WAVE_BASE = 12, WAVE_STEP = 3;            // enemies per wave = 12 + 3*wave
-  const SPEED_PER_WAVE = 0.06, HIDE_PER_WAVE = 0.05;
-  const BASE_SPEED = 0.04;                         // fraction of screen width per second
+  const WAVE_BASE = 12, WAVE_STEP = 3;
+  const HIDE_PER_WAVE = 0.04;
+  const BASE_SPEED = 0.04;
   const CURSE_COIN_MULT = 1.5;
   const TURRET_HITS = 5;
-  const HINT_STEP = 0.35;                          // seconds each hint frame is shown (hidden letters cycle left→right)
+  const HINT_STEP = 0.35;
   const UPG = {
-    slow:   { name: "Slow Field",  max: 5, cost: l => 30 + 20 * l, desc: "enemies move 12% slower" },
-    reveal: { name: "Reveal+",     max: 3, cost: l => 35 + 25 * l, desc: "every block shows 1 more letter" },
-    armor:  { name: "Armor",       max: 4, cost: l => 40 + 30 * l, desc: "+1 life", meta: "armor" },
-    turret: { name: "Auto-Turret", max: 4, cost: l => (l === 0 ? 60 : 50 + 35 * l), desc: `knockback shots, ${TURRET_HITS} hits destroy a block`, meta: "turret" },
+    slow:   { name: "Trường Làm Chậm", max: 5, cost: l => 30 + 20 * l, desc: "từ di chuyển chậm đi 12%" },
+    reveal: { name: "Hé Lộ Thêm",      max: 3, cost: l => 35 + 25 * l, desc: "mỗi từ hiển thị thêm 1 chữ cái" },
+    armor:  { name: "Giáp Bảo Vệ",     max: 4, cost: l => 40 + 30 * l, desc: "+1 mạng", meta: "armor" },
+    turret: { name: "Tháp Pháo Phụ",   max: 4, cost: l => (l === 0 ? 60 : 50 + 35 * l), desc: `bắn đẩy lùi từ, ${TURRET_HITS} phát tiêu diệt 1 từ`, meta: "turret" },
   };
   const CURSES = {
-    swift: { name: "Swift", desc: "enemies +25% speed" },
-    fog:   { name: "Fog",   desc: "+20% letters hidden" },
+    swift: { name: "Tốc Hành", desc: "từ di chuyển nhanh +25%" },
+    fog:   { name: "Sương Mù", desc: "ẩn thêm +20% chữ cái" },
   };
 
   const canvas = $("#game"), ctx = canvas.getContext("2d");
   const input = $("#answer"), hud = $("#hud"), vocabInfo = $("#vocabInfo");
   const ov = $("#ov"), ovBody = $("#ovBody");
   let W = 0, H = 0, raf = 0, last = 0, state = "idle", prevState = "play", ovKind = null;
-  let R = null, enemies = [], shots = [], parts = [], floats = [], bag = [], laneCount = 3, shakeT = 0, introT = 0;
+  let R = null, enemies = [], shots = [], parts = [], floats = [], stars = [], bag = [], laneCount = 3, shakeT = 0, introT = 0;
   const cannon = { x: -90, angle: 0, recoil: 0, tAngle: -0.3 };
-  const TOP = 64, BOTTOM = 96, BLOCK_H = 58;
+  const TOP = 68, BOTTOM = 96, BLOCK_H = 60;
   const rand = (a, b) => a + Math.random() * (b - a);
   const easeOut = p => 1 - Math.pow(1 - p, 3);
   const norm = s => s.toLowerCase().replace(/\s+/g, " ").trim();
   const running = () => ["intro", "play", "shop", "paused"].includes(state);
+
+  function initStars() {
+    stars = Array.from({ length: 48 }, () => ({
+      x: Math.random() * Math.max(W, 800),
+      y: Math.random() * Math.max(H, 600),
+      r: rand(0.6, 1.8),
+      a: rand(0.12, 0.55),
+    }));
+  }
 
   function sizeCanvas() {
     const dpr = window.devicePixelRatio || 1;
     W = frame.clientWidth; H = frame.clientHeight;
     canvas.width = W * dpr; canvas.height = H * dpr;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (!stars.length) initStars();
   }
-  new ResizeObserver(() => { fit(cur); sizeCanvas(); }).observe(frame);
+  new ResizeObserver(() => { fitArt(); sizeCanvas(); }).observe(frame);
   sizeCanvas();
 
   const laneY = i => TOP + (i + 0.5) * (H - TOP - BOTTOM) / laneCount;
   const cannonY = () => TOP + (H - TOP - BOTTOM) / 2;
-  const diff = () => DIFF[$("#diff").value] || DIFF.easy;
+  const diff = () => DIFF[$("#diff").value] || DIFF.han;
   const comboMult = s => (s >= 10 ? 2 : s >= 6 ? 1.5 : s >= 3 ? 1.2 : 1);
 
   const hideFrac = () => Math.min(1, diff().hide + HIDE_PER_WAVE * (R.wave - 1) + (R.curse === "fog" ? 0.2 : 0));
-  const speedNow = () =>
-    W * BASE_SPEED * diff().speed * (1 + SPEED_PER_WAVE * (R.wave - 1)) *
-    (R.curse === "swift" ? 1.25 : 1) * Math.pow(0.88, R.upg.slow);
+  const speedNow = () => {
+    const d = diff();
+    return W * BASE_SPEED * d.speed * (1 + d.waveSpeed * (R.wave - 1)) *
+      (R.curse === "swift" ? 1.25 : 1) * Math.pow(0.88, R.upg.slow);
+  };
   const toSpawnFor = w => WAVE_BASE + WAVE_STEP * w;
-  const spawnGap = () => Math.max(1.3, 2.8 - 0.1 * R.wave) + rand(0, 0.6);
+  const spawnGap = () => {
+    const slowScale = $("#diff").value === "han" ? 1.45 : 1;
+    return (Math.max(1.5, 3.0 - 0.1 * R.wave) + rand(0, 0.7)) * slowScale;
+  };
+  const hintZoneWidth = () => W * Math.max(0.08, diff().hint - 0.008 * (R.wave - 1));
 
   function nextWord() {
     if (!bag.length) {
@@ -364,25 +814,28 @@
     const m = mask(en);
     ctx.font = "bold 18px monospace"; const w1 = ctx.measureText(m.text).width;
     ctx.font = "13px monospace";      const w2 = ctx.measureText(vi).width;
-    enemies.push({ word: en, shown: m.text, vi, hidden: m.hidden, lane, w: Math.max(w1, w2) + 32, x: W + 10, dead: false, targeted: false, hits: 0, orig: [...en], order: m.order.slice().sort((a, b) => a - b), hintT: 0, step: -1, inZone: false, flash: 0 });
+    enemies.push({
+      word: en, shown: m.text, vi, hidden: m.hidden, lane,
+      w: Math.max(w1, w2) + 36, x: W + 10, dead: false, targeted: false, hits: 0,
+      orig: [...en], order: m.order.slice().sort((a, b) => a - b),
+      hintT: 0, step: -1, inZone: false, flash: 0
+    });
     return true;
   }
 
-  // hint: inside the hint zone, hidden letters blink one at a time, left→right, looping until the block dies
   function hint(e, dt) {
     if (e.flash > 0) e.flash -= dt;
     const n = e.order.length;
     if (!n) return;
     const build = ri => { const a = [...e.orig]; e.order.forEach(i => { if (i !== ri) a[i] = "_"; }); return a.join(" "); };
-    const zone = Math.max(0.15, diff().hint - 0.01 * (R.wave - 1));
-    const start = cannon.x + 44 + W * zone;
+    const start = cannon.x + 44 + hintZoneWidth();
     if (e.x < start) {
       if (!e.inZone) { e.inZone = true; e.hintT = 0; e.flash = 0.35; }
       e.hintT += dt;
-      const frames = n === 1 ? 2 : n;                    // a single hidden letter needs a blank frame to blink
+      const frames = n === 1 ? 2 : n;
       const step = Math.floor(e.hintT / HINT_STEP) % frames;
       if (step !== e.step) { e.step = step; e.shown = build(step < n ? e.order[step] : -1); }
-    } else if (e.inZone) {                               // knocked back out of the zone
+    } else if (e.inZone) {
       e.inZone = false; e.step = -1; e.shown = build(-1);
     }
   }
@@ -422,17 +875,22 @@
     }
     R.coins += gain; R.earned += gain;
     const c = center(e);
-    for (let i = 0; i < 18; i++) {
+    for (let i = 0; i < 20; i++) {
       const a = rand(0, Math.PI * 2), v = rand(60, 240);
-      parts.push({ x: c.x, y: c.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: rand(.4, .8), max: .8, ch: "*#%@+x"[(Math.random() * 6) | 0] });
+      parts.push({
+        x: c.x, y: c.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v,
+        life: rand(.45, .85), max: .85,
+        ch: "*#%@+✦"[(Math.random() * 6) | 0],
+        col: i % 2 === 0 ? "#a78bfa" : "#38bdf8"
+      });
     }
-    floats.push({ text: e.word, x: c.x, y: c.y, life: 1.1 });
-    floats.push({ text: `+${gain}`, x: c.x, y: c.y + 26, life: .8, small: true });
+    floats.push({ text: e.word, x: c.x, y: c.y, life: 1.15, col: "#f1effc" });
+    floats.push({ text: `+${gain} xu`, x: c.x, y: c.y + 26, life: .85, small: true, col: "#fbbf24" });
   }
 
   function newRun() {
     R = {
-      wave: 1, toSpawn: toSpawnFor(1), spawned: 0, banner: 2, spawnT: 1.4,
+      wave: 1, toSpawn: toSpawnFor(1), spawned: 0, banner: 2, spawnT: 1.2,
       score: 0, kills: 0, coins: 15 * perk("seed"), earned: 0,
       lives: 3 + perk("life"), streak: 0, maxStreak: 0,
       upg: { slow: 0, reveal: 0, armor: 0, turret: 0 },
@@ -441,10 +899,10 @@
     };
     enemies = []; shots = []; parts = []; floats = []; bag = [];
     shakeT = 0; introT = 0;
-    laneCount = Math.max(2, Math.min(5, Math.floor((H - TOP - BOTTOM) / 72)));
+    laneCount = Math.max(2, Math.min(5, Math.floor((H - TOP - BOTTOM) / 76)));
     cannon.x = -90; cannon.angle = 0; cannon.recoil = 0;
     input.value = "";
-    vocabInfo.textContent = `${vocab.length} words`;
+    vocabInfo.textContent = `${vocab.length} từ`;
   }
 
   /* ---- run end / shards ---- */
@@ -478,14 +936,14 @@
   const rerollCost = () => 10 + 5 * R.rerolls;
 
   function workshopHTML() {
-    let h = `<h3>WORKSHOP — shards: ${meta.shards}</h3>`;
+    let h = `<h3>XƯỞNG NÂNG CẤP — mảnh tinh thể: ${meta.shards}</h3>`;
     for (const it of META_ITEMS) {
       if (it.kind === "unlock") {
         const owned = !!meta.unlocked[it.id];
-        h += opt(`data-act="meta" data-id="${it.id}"`, it.name, owned ? "owned" : `${it.cost} shards`, it.desc, owned || meta.shards < it.cost);
+        h += opt(`data-act="meta" data-id="${it.id}"`, it.name, owned ? "đã sở hữu" : `${it.cost} mảnh`, it.desc, owned || meta.shards < it.cost);
       } else {
         const lv = perk(it.id), maxed = lv >= it.max, cost = it.costs[lv];
-        h += opt(`data-act="meta" data-id="${it.id}"`, `${it.name} (${lv}/${it.max})`, maxed ? "maxed" : `${cost} shards`, it.desc, maxed || meta.shards < cost);
+        h += opt(`data-act="meta" data-id="${it.id}"`, `${it.name} (Cấp ${lv}/${it.max})`, maxed ? "tối đa" : `${cost} mảnh`, it.desc, maxed || meta.shards < cost);
       }
     }
     return h;
@@ -493,31 +951,31 @@
 
   function renderOv() {
     if (ovKind === "shop") {
-      let h = `<h2>WAVE ${R.wave} CLEARED</h2>
-        <div class="m">coins ${R.coins} &nbsp;·&nbsp; score ${R.score} &nbsp;·&nbsp; lives ${R.lives} &nbsp;·&nbsp; best combo ${R.maxStreak}</div>
-        <h3>UPGRADES  [1] [2] [3]</h3>`;
-      if (!R.draft.length) h += `<div class="m">nothing left to buy.</div>`;
+      let h = `<h2>HOÀN THÀNH ĐỢT ${R.wave}</h2>
+        <div class="m">xu: <b>${R.coins}</b> &nbsp;·&nbsp; điểm: <b>${R.score}</b> &nbsp;·&nbsp; mạng: <b>${R.lives}</b> &nbsp;·&nbsp; chuỗi cao nhất: <b>${R.maxStreak}</b></div>
+        <h3>NÂNG CẤP TRONG TRẬN &nbsp;[1] [2] [3]</h3>`;
+      if (!R.draft.length) h += `<div class="m">đã nâng cấp tối đa tất cả kỹ năng.</div>`;
       R.draft.forEach((id, i) => {
         const u = UPG[id], lv = R.upg[id], cost = u.cost(lv);
-        h += opt(`data-act="buy" data-i="${i}"`, `[${i + 1}] ${u.name}  Lv ${lv} → ${lv + 1}`, `${cost} coins`, u.desc, R.coins < cost);
+        h += opt(`data-act="buy" data-i="${i}"`, `[${i + 1}] ${u.name}  (Cấp ${lv} → ${lv + 1})`, `${cost} xu`, u.desc, R.coins < cost);
       });
-      h += `<div class="row"><button class="btn" data-act="reroll" ${R.coins < rerollCost() ? "disabled" : ""}>[R] Reroll — ${rerollCost()} coins</button></div>`;
+      h += `<div class="row"><button class="btn" data-act="reroll" ${R.coins < rerollCost() ? "disabled" : ""}>[R] Đổi danh sách — ${rerollCost()} xu</button></div>`;
       if (meta.unlocked.curses) {
-        h += `<h3>CURSE FOR NEXT WAVE (coins x${CURSE_COIN_MULT})  [C]</h3><div class="row">
-          <button class="btn ${!R.nextCurse ? "on" : ""}" data-act="curse" data-v="">None</button>` +
+        h += `<h3>LỜI NGUYỀN CHO ĐỢT SAU (xu x${CURSE_COIN_MULT}) &nbsp;[C]</h3><div class="row">
+          <button class="btn ${!R.nextCurse ? "on" : ""}" data-act="curse" data-v="">Không dùng</button>` +
           Object.entries(CURSES).map(([k, c]) => `<button class="btn ${R.nextCurse === k ? "on" : ""}" data-act="curse" data-v="${k}" title="${c.desc}">${c.name} — ${c.desc}</button>`).join("") + `</div>`;
       }
-      h += `<h3></h3><button class="opt" data-act="start"><div class="r"><b>[Enter] Start wave ${R.wave + 1}</b><span>${toSpawnFor(R.wave + 1)} enemies</span></div></button>`;
+      h += `<h3></h3><button class="opt" data-act="start"><div class="r"><b>[Enter] Bắt đầu đợt ${R.wave + 1}</b><span>${toSpawnFor(R.wave + 1)} từ vựng</span></div></button>`;
       ovBody.innerHTML = h;
     } else if (ovKind === "over") {
-      ovBody.innerHTML = `<h2>GAME OVER</h2>
-        <div class="m">wave ${R.wave} &nbsp;·&nbsp; score ${R.score} &nbsp;·&nbsp; kills ${R.kills} &nbsp;·&nbsp; best combo ${R.maxStreak}<br>
-        coins earned ${R.earned} &nbsp;→&nbsp; <b>+${R.gain} shards</b><br>
-        best ever: wave ${meta.bestWave}, score ${meta.bestScore}</div>
+      ovBody.innerHTML = `<h2>KẾT THÚC</h2>
+        <div class="m">đợt: <b>${R.wave}</b> &nbsp;·&nbsp; điểm: <b>${R.score}</b> &nbsp;·&nbsp; bắn hạ: <b>${R.kills}</b> từ &nbsp;·&nbsp; chuỗi cao nhất: <b>${R.maxStreak}</b><br>
+        xu kiếm được: ${R.earned} &nbsp;→&nbsp; <b>+${R.gain} mảnh tinh thể</b><br>
+        kỷ lục cá nhân: đợt ${meta.bestWave}, điểm ${meta.bestScore}</div>
         ${workshopHTML()}
-        <h3></h3><button class="opt" data-act="restart"><div class="r"><b>Play again</b><span></span></div></button>`;
+        <h3></h3><button class="opt" data-act="restart"><div class="r"><b>Chơi lại từ đầu</b><span></span></div></button>`;
     } else if (ovKind === "workshop") {
-      ovBody.innerHTML = `<h2>PAUSED</h2>${workshopHTML()}<h3></h3><button class="opt" data-act="resume"><div class="r"><b>Resume</b><span></span></div></button>`;
+      ovBody.innerHTML = `<h2>TẠM DỪNG</h2>${workshopHTML()}<h3></h3><button class="opt" data-act="resume"><div class="r"><b>Tiếp tục chơi</b><span></span></div></button>`;
     }
   }
   function showOv(kind) { ovKind = kind; renderOv(); ov.classList.add("on"); ov.scrollTop = 0; }
@@ -543,7 +1001,7 @@
   function startNextWave() {
     R.wave++; R.toSpawn = toSpawnFor(R.wave); R.spawned = 0;
     R.curse = R.nextCurse; R.nextCurse = null;
-    R.banner = 2; R.spawnT = 1.4; R.turretT = 3;
+    R.banner = 2; R.spawnT = 1.2; R.turretT = 3;
     hideOv(); state = "play"; input.focus();
   }
   function openShop() {
@@ -621,7 +1079,7 @@
               if (s.target.hits >= TURRET_HITS) explode(s.target, true);
             }
             s.gone = true;
-          } else { const v = (s.kind === "main" ? 1100 : 800) * dt; s.x += dx / d * v; s.y += dy / d * v; }
+          } else { const v = (s.kind === "main" ? 1150 : 850) * dt; s.x += dx / d * v; s.y += dy / d * v; }
         }
         shots = shots.filter(s => !s.gone);
         enemies = enemies.filter(e => !e.dead);
@@ -644,74 +1102,215 @@
     }
     const cm = comboMult(R.streak);
     hud.textContent =
-      `WAVE ${R.wave}  SCORE ${R.score}  COINS ${R.coins}  ${"♥".repeat(Math.max(R.lives, 0)) || "-"}` +
-      (R.streak >= 3 ? `  COMBO x${cm} (${R.streak})` : "") + (R.curse ? `  [${CURSES[R.curse].name}]` : "");
+      `ĐỢT ${R.wave} · ĐIỂM ${R.score} · XU ${R.coins} · ${"♥".repeat(Math.max(R.lives, 0)) || "-"}` +
+      (R.streak >= 3 ? ` · CHUỖI x${cm} (${R.streak})` : "") + (R.curse ? ` · [${CURSES[R.curse].name}]` : "");
+  }
+
+  function roundRect(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
   }
 
   function drawCannon() {
     const cx = cannon.x, cy = cannonY();
-    ctx.fillStyle = "#000"; ctx.strokeStyle = "#000"; ctx.lineWidth = 3;
-    ctx.save(); ctx.translate(cx, cy); ctx.rotate(cannon.angle);
-    ctx.fillRect(-cannon.recoil, -9, 70, 18);
-    ctx.fillRect(60 - cannon.recoil, -13, 14, 26);
-    ctx.restore();
-    ctx.fillRect(cx - 30, cy + 4, 60, 12);
-    ctx.fillStyle = "#fff";
-    ctx.beginPath(); ctx.arc(cx, cy + 18, 22, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.save();
+    ctx.shadowColor = "rgba(167, 139, 250, 0.45)";
+    ctx.shadowBlur = 14;
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(cannon.angle);
+    ctx.fillStyle = "#1e1a3d";
+    ctx.strokeStyle = "#a78bfa";
     ctx.lineWidth = 2;
+    roundRect(-cannon.recoil, -9, 70, 18, 4);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#a78bfa";
+    roundRect(58 - cannon.recoil, -12, 14, 24, 3);
+    ctx.fill();
+    ctx.restore();
+
+    ctx.fillStyle = "#15122b";
+    ctx.strokeStyle = "#a78bfa";
+    ctx.lineWidth = 2;
+    roundRect(cx - 30, cy + 4, 60, 12, 4);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "#0e0c1d";
+    ctx.beginPath();
+    ctx.arc(cx, cy + 18, 22, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = "#6d5cae";
     for (let i = 0; i < 4; i++) {
       const a = i * Math.PI / 2 + Math.PI / 4;
-      ctx.beginPath(); ctx.moveTo(cx, cy + 18); ctx.lineTo(cx + Math.cos(a) * 22, cy + 18 + Math.sin(a) * 22); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(cx, cy + 18);
+      ctx.lineTo(cx + Math.cos(a) * 20, cy + 18 + Math.sin(a) * 20);
+      ctx.stroke();
     }
-    ctx.fillStyle = "#000"; ctx.beginPath(); ctx.arc(cx, cy + 18, 4, 0, Math.PI * 2); ctx.fill();
-    if (R.upg.turret > 0) { // mini turret on top
-      ctx.save(); ctx.translate(cx, cy - 22); ctx.rotate(cannon.tAngle);
-      ctx.fillRect(0, -3, 30, 6); ctx.restore();
-      ctx.fillStyle = "#fff"; ctx.strokeStyle = "#000"; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.arc(cx, cy - 22, 8, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#38bdf8";
+    ctx.beginPath();
+    ctx.arc(cx, cy + 18, 4.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    if (R.upg.turret > 0) {
+      ctx.save();
+      ctx.translate(cx, cy - 22);
+      ctx.rotate(cannon.tAngle);
+      ctx.fillStyle = "#38bdf8";
+      roundRect(0, -3, 30, 6, 2);
+      ctx.fill();
+      ctx.restore();
+
+      ctx.fillStyle = "#15122b";
+      ctx.strokeStyle = "#38bdf8";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(cx, cy - 22, 8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
     }
+    ctx.restore();
   }
 
   function draw() {
     ctx.clearRect(0, 0, W, H);
-    ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, W, H);
     ctx.save();
     if (shakeT > 0) ctx.translate(rand(-5, 5), rand(-5, 5));
-    ctx.strokeStyle = "#bbb"; ctx.lineWidth = 1; ctx.setLineDash([6, 6]);
-    ctx.beginPath(); ctx.moveTo(cannon.x + 44, TOP); ctx.lineTo(cannon.x + 44, H - BOTTOM + 20); ctx.stroke();
+
+    for (const st of stars) {
+      ctx.fillStyle = `rgba(226, 232, 240, ${st.a})`;
+      ctx.beginPath();
+      ctx.arc(st.x % W, st.y % H, st.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.strokeStyle = "rgba(167, 139, 250, 0.06)";
+    ctx.lineWidth = 1;
+    for (let i = 0; i < laneCount; i++) {
+      const ly = laneY(i);
+      ctx.beginPath();
+      ctx.moveTo(cannon.x + 60, ly);
+      ctx.lineTo(W - 16, ly);
+      ctx.stroke();
+    }
+
+    const dangerX = cannon.x + 44;
+    const hintX = dangerX + hintZoneWidth();
+
+    ctx.strokeStyle = "rgba(56, 189, 248, 0.25)";
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 6]);
+    ctx.beginPath();
+    ctx.moveTo(hintX, TOP);
+    ctx.lineTo(hintX, H - BOTTOM + 16);
+    ctx.stroke();
     ctx.setLineDash([]);
+    ctx.fillStyle = "rgba(56, 189, 248, 0.45)";
+    ctx.font = "10px monospace";
+    ctx.textAlign = "center";
+    ctx.fillText("vùng gợi ý", (dangerX + hintX) / 2, H - BOTTOM + 14);
+
+    ctx.strokeStyle = "rgba(251, 113, 133, 0.55)";
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([6, 6]);
+    ctx.beginPath();
+    ctx.moveTo(dangerX, TOP);
+    ctx.lineTo(dangerX, H - BOTTOM + 16);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
     drawCannon();
-    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
     for (const e of enemies) {
       const y = laneY(e.lane) - BLOCK_H / 2;
-      ctx.fillStyle = "#fff"; ctx.strokeStyle = "#000"; ctx.lineWidth = (e.targeted || e.flash > 0) ? 4 : 2;
-      ctx.fillRect(e.x, y, e.w, BLOCK_H); ctx.strokeRect(e.x, y, e.w, BLOCK_H);
-      ctx.fillStyle = "#000"; ctx.font = "bold 18px monospace";
+      const activeGlow = e.targeted || e.flash > 0 || e.inZone;
+
+      ctx.save();
+      if (activeGlow) {
+        ctx.shadowColor = e.targeted ? "rgba(167, 139, 250, 0.55)" : "rgba(56, 189, 248, 0.35)";
+        ctx.shadowBlur = 14;
+      }
+      ctx.fillStyle = e.inZone ? "rgba(24, 24, 52, 0.96)" : "rgba(19, 16, 40, 0.94)";
+      ctx.strokeStyle = e.targeted ? "#a78bfa" : (e.inZone ? "#38bdf8" : "#3b3566");
+      ctx.lineWidth = (e.targeted || e.flash > 0) ? 2.5 : 1.5;
+      roundRect(e.x, y, e.w, BLOCK_H, 8);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.fillStyle = e.inZone ? "#e0f2fe" : "#f8fafc";
+      ctx.font = "bold 18px monospace";
       ctx.fillText(e.shown, e.x + e.w / 2, y + 22);
-      ctx.fillStyle = "#555"; ctx.font = "13px monospace";
-      ctx.fillText(e.vi, e.x + e.w / 2, y + 43);
-      if (e.hits) { ctx.fillStyle = "#000"; ctx.fillRect(e.x, y + BLOCK_H - 4, e.w * e.hits / TURRET_HITS, 4); }
+
+      ctx.fillStyle = "#a5b4fc";
+      ctx.font = "13px monospace";
+      ctx.fillText(e.vi, e.x + e.w / 2, y + 44);
+
+      if (e.hits) {
+        ctx.fillStyle = "#38bdf8";
+        ctx.fillRect(e.x + 4, y + BLOCK_H - 5, (e.w - 8) * e.hits / TURRET_HITS, 3);
+      }
     }
-    ctx.fillStyle = "#000"; ctx.strokeStyle = "#000"; ctx.lineWidth = 2;
+
     for (const s of shots) {
-      ctx.beginPath(); ctx.arc(s.x, s.y, s.kind === "main" ? 6 : 4, 0, Math.PI * 2);
+      ctx.save();
+      ctx.shadowColor = s.kind === "main" ? "#a78bfa" : "#38bdf8";
+      ctx.shadowBlur = 12;
+      ctx.fillStyle = s.kind === "main" ? "#f1effc" : "#38bdf8";
+      ctx.strokeStyle = s.kind === "main" ? "#a78bfa" : "#38bdf8";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.kind === "main" ? 6 : 4, 0, Math.PI * 2);
       s.kind === "main" ? ctx.fill() : ctx.stroke();
+      ctx.restore();
     }
-    ctx.font = "bold 16px monospace";
-    for (const p of parts) { ctx.globalAlpha = Math.max(0, p.life / p.max); ctx.fillText(p.ch, p.x, p.y); }
+
+    ctx.font = "bold 15px monospace";
+    for (const p of parts) {
+      ctx.globalAlpha = Math.max(0, p.life / p.max);
+      ctx.fillStyle = p.col || "#a78bfa";
+      ctx.fillText(p.ch, p.x, p.y);
+    }
+
     for (const f of floats) {
       ctx.globalAlpha = Math.max(0, Math.min(1, f.life));
-      ctx.font = f.small ? "12px monospace" : "bold 18px monospace";
+      ctx.fillStyle = f.col || "#f1effc";
+      ctx.font = f.small ? "bold 12px monospace" : "bold 18px monospace";
       ctx.fillText(f.text, f.x, f.y - 30);
     }
     ctx.globalAlpha = 1;
+
     if (state === "play" && R.banner > 0) {
+      ctx.save();
       ctx.globalAlpha = Math.min(1, R.banner / 0.6);
-      ctx.fillStyle = "#000"; ctx.font = "bold 44px monospace";
-      ctx.fillText(`WAVE ${R.wave}`, W / 2, H / 2 - 10);
+      ctx.shadowColor = "rgba(167, 139, 250, 0.5)";
+      ctx.shadowBlur = 20;
+      ctx.fillStyle = "#f1effc";
+      ctx.font = "bold 42px monospace";
+      ctx.fillText(`ĐỢT ${R.wave}`, W / 2, H / 2 - 12);
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = "#c4b5fd";
       ctx.font = "13px monospace";
-      ctx.fillText(R.curse ? `curse: ${CURSES[R.curse].name} — ${CURSES[R.curse].desc}  (coins x${CURSE_COIN_MULT})` : `${R.toSpawn} enemies`, W / 2, H / 2 + 28);
-      ctx.globalAlpha = 1;
+      ctx.fillText(
+        R.curse
+          ? `lời nguyền: ${CURSES[R.curse].name} — ${CURSES[R.curse].desc} (xu x${CURSE_COIN_MULT})`
+          : `${R.toSpawn} từ vựng đang tiến tới`,
+        W / 2, H / 2 + 28
+      );
+      ctx.restore();
     }
     ctx.restore();
   }
@@ -735,7 +1334,7 @@
     hideOv(); input.blur();
   }
 
-  /* ---- input ---- */
+  /* ---- input & vocab upload ---- */
   input.addEventListener("input", () => {
     if (state !== "play") return;
     const v = norm(input.value);
@@ -759,23 +1358,36 @@
     if (state !== "play") return;
     prevState = state; state = "paused"; input.blur(); showOv("workshop");
   };
+  const statusEl = $("#status");
   $("#upload").onclick = () => $("#file").click();
+  $("#menuUpload").onclick = () => $("#file").click();
   $("#file").onchange = async ev => {
     const f = ev.target.files[0]; if (!f) return;
     const list = parseVocab(await f.text(), f.name);
     ev.target.value = "";
-    if (!list.length) { vocabInfo.textContent = "no valid lines (use: english,vietnamese)"; return; }
+    if (!list.length) {
+      const msg = "file không hợp lệ (định dạng: tiếng anh, tiếng việt)";
+      vocabInfo.textContent = msg;
+      statusEl.textContent = msg;
+      return;
+    }
     vocab = list;
+    importedVocab = list.slice();
     try { localStorage.setItem("wa_vocab", JSON.stringify(vocab)); } catch (e) {}
-    if (running()) awardShards();
-    startGame();
+    updateVocabMeta();
+    fitArt();
+    seedFloatingWords();
+    statusEl.textContent = `Đã nạp ${list.length} từ từ "${f.name}"`;
+    if (body.classList.contains("game")) {
+      if (running()) awardShards();
+      startGame();
+    }
   };
   $("#diff").onchange = () => { $("#diff").blur(); if (state === "play") input.focus(); };
 
   /* =====================================================
    *  MENU
    * ===================================================== */
-  const statusEl = $("#status");
   function enterGame(fn) {
     body.classList.add("game");
     statusEl.textContent = "";
@@ -784,20 +1396,25 @@
   function leaveGame() {
     stopGame();
     body.classList.remove("game");
-    setTimeout(() => { fit(cur); if (arts.length) show(cur); }, 760);
+    setTimeout(() => { fitArt(); }, 760);
   }
   $("#back").onclick = leaveGame;
 
   const MODES = [
-    { name: "Word Cannon", start: startGame },
-    { name: "Word Scramble" }, { name: "Hangman" }, { name: "Typing Race" },
-    { name: "Listening Quiz" }, { name: "Sentence Builder" }, { name: "Fill the Blank" }, { name: "Speed Translate" },
+    { name: "Pháo Đài Từ Vựng", start: startGame },
+    { name: "Xếp Chữ Ngược" },
+    { name: "Đoán Chữ Treo Cổ" },
+    { name: "Đua Gõ Tốc Độ" },
+    { name: "Nghe & Chọn Từ" },
+    { name: "Ghép Câu Hoàn Chỉnh" },
+    { name: "Điền Vào Chỗ Trống" },
+    { name: "Dịch Nhanh Phản Xạ" },
   ];
   MODES.forEach((m, i) => {
     const b = document.createElement("button");
-    b.className = "mode";
-    b.innerHTML = `<span>${m.name}</span><span class="idx">${String(i + 1).padStart(2, "0")}</span>`;
-    b.onclick = () => m.start ? enterGame(m.start) : (statusEl.textContent = `[${m.name}] — not implemented yet`);
+    b.className = "mode" + (m.start ? " ready" : "");
+    b.innerHTML = `<span>${m.name}</span><span class="idx">${m.start ? "SẴN SÀNG" : String(i + 1).padStart(2, "0")}</span>`;
+    b.onclick = () => m.start ? enterGame(m.start) : (statusEl.textContent = `[${m.name}] — chế độ này đang được phát triển`);
     $("#modes").appendChild(b);
   });
 })();

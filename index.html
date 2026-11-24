@@ -17,10 +17,7 @@
   body.game { grid-template-columns: 0px 1fr; }
 
   /* LEFT: menu */
-  aside {
-    border-right: 1px solid var(--line); overflow: hidden; min-width: 0;
-    transition: opacity .3s, border-color .7s;
-  }
+  aside { border-right: 1px solid var(--line); overflow: hidden; min-width: 0; transition: opacity .3s, border-color .7s; }
   body.game aside { opacity: 0; pointer-events: none; border-right-color: transparent; }
   .aside-in { width: 299px; padding: 28px 24px; display: flex; flex-direction: column; gap: 10px; height: 100%; overflow-y: auto; }
   h1 { font-size: 20px; letter-spacing: .08em; text-transform: uppercase; }
@@ -37,7 +34,7 @@
   .mode:hover .idx, .mode:focus-visible .idx { color: #aaa; }
   #status { margin-top: auto; font-size: 11px; color: var(--mute); min-height: 1.4em; }
 
-  /* RIGHT: display */
+  /* RIGHT */
   main { padding: 28px; display: flex; flex-direction: column; gap: 10px; min-width: 0; min-height: 0; transition: padding .7s var(--ease); }
   body.game main { padding: 12px; }
   #frame { flex: 1; border: 1px solid var(--line); position: relative; overflow: hidden; min-height: 0; }
@@ -64,9 +61,9 @@
     font: inherit; font-size: 12px; cursor: pointer; background: var(--bg); color: var(--fg);
     border: 1px solid var(--line); padding: 8px 12px; transition: background .12s, color .12s;
   }
-  .btn:hover, .btn:focus-visible { background: var(--fg); color: var(--bg); outline: none; }
+  .btn:hover, .btn:focus-visible, .btn.on { background: var(--fg); color: var(--bg); outline: none; }
   select.btn:hover { background: var(--bg); color: var(--fg); }
-  #hud { font-size: 12px; letter-spacing: .08em; white-space: nowrap; }
+  #hud { font-size: 12px; letter-spacing: .06em; white-space: nowrap; }
   #vocabInfo { font-size: 11px; color: var(--mute); }
   #answer {
     position: absolute; bottom: 22px; left: 50%; transform: translateX(-50%); z-index: 3;
@@ -76,13 +73,26 @@
   }
   #answer.shake { animation: shake .3s; }
   @keyframes shake { 20%{transform:translateX(calc(-50% - 8px))} 40%{transform:translateX(calc(-50% + 8px))} 60%{transform:translateX(calc(-50% - 5px))} 80%{transform:translateX(calc(-50% + 5px))} }
-  #over {
-    position: absolute; inset: 0; z-index: 4; display: none; flex-direction: column;
-    align-items: center; justify-content: center; gap: 14px; background: rgba(255,255,255,.9);
+
+  /* overlay: shop / workshop / game over */
+  #ov { position: absolute; inset: 0; z-index: 4; display: none; background: rgba(255,255,255,.95); overflow-y: auto; }
+  #ov.on { display: block; }
+  #ovBody { width: min(680px, 94%); margin: 0 auto; padding: 64px 0 40px; display: flex; flex-direction: column; gap: 10px; }
+  #ovBody h2 { font-size: 22px; letter-spacing: .12em; }
+  #ovBody h3 { font-size: 12px; letter-spacing: .12em; margin-top: 14px; color: var(--mute); font-weight: normal; }
+  #ovBody .m { font-size: 12px; color: var(--mute); line-height: 1.7; }
+  .opt {
+    display: block; width: 100%; text-align: left; font: inherit; cursor: pointer;
+    padding: 12px 14px; background: var(--bg); color: var(--fg); border: 1px solid var(--line);
+    transition: background .12s, color .12s;
   }
-  #over.on { display: flex; }
-  #over h2 { font-size: 28px; letter-spacing: .15em; }
-  #over p { font-size: 13px; color: var(--mute); }
+  .opt .r { display: flex; justify-content: space-between; font-size: 13px; }
+  .opt .d { font-size: 11px; color: var(--mute); margin-top: 4px; }
+  .opt:hover:not(:disabled) { background: var(--fg); color: var(--bg); }
+  .opt:hover:not(:disabled) .d { color: #bbb; }
+  .opt:disabled { color: #aaa; border-color: #ccc; cursor: default; }
+  .opt:disabled .d { color: #bbb; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; }
 
   @media (max-width: 760px) {
     body { grid-template-columns: 1fr; grid-template-rows: auto 1fr; height: auto; min-height: 100vh; }
@@ -111,15 +121,17 @@
     <canvas id="game"></canvas>
 
     <div id="bar">
-      <div class="grp"><button class="btn" id="back">&larr; Menu</button></div>
+      <div class="grp">
+        <button class="btn" id="back">&larr; Menu</button>
+        <button class="btn" id="workshop">Workshop</button>
+      </div>
       <div id="hud"></div>
       <div class="grp">
         <span id="vocabInfo"></span>
-        <select class="btn" id="diff" title="Difficulty">
-          <option value="auto">Progressive</option>
-          <option value="0.3">Easy</option>
-          <option value="0.6">Medium</option>
-          <option value="1">Hard</option>
+        <select class="btn" id="diff" title="Starting difficulty (rises every wave)">
+          <option value="easy">Easy</option>
+          <option value="medium">Medium</option>
+          <option value="hard">Hard</option>
         </select>
         <button class="btn" id="upload">Upload vocab</button>
         <input type="file" id="file" accept=".txt,.csv,.tsv,.json,text/plain" hidden>
@@ -128,11 +140,7 @@
 
     <input id="answer" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="type the word...">
 
-    <div id="over">
-      <h2>GAME OVER</h2>
-      <p id="overScore"></p>
-      <button class="btn" id="restart">Play again</button>
-    </div>
+    <div id="ov"><div id="ovBody"></div></div>
   </div>
   <div id="meta"><span id="counter"></span><span>auto-cycle</span></div>
 </main>
@@ -223,7 +231,7 @@
       en = String(en ?? "").trim().replace(/^["']|["']$/g, "").trim();
       vi = String(vi ?? "").trim().replace(/^["']|["']$/g, "").trim();
       if (!en || !vi) return;
-      if (["english", "en", "word"].includes(en.toLowerCase()) && out.length === 0) return; // header
+      if (["english", "en", "word"].includes(en.toLowerCase()) && out.length === 0) return;
       out.push([en, vi]);
     };
     const t = text.trim();
@@ -237,7 +245,7 @@
         });
         else if (j && typeof j === "object") Object.entries(j).forEach(([k, v]) => push(k, v));
         return out;
-      } catch (e) { /* fall through to line parsing */ }
+      } catch (e) {}
     }
     for (const raw of t.split(/\r?\n/)) {
       const line = raw.trim();
@@ -253,17 +261,60 @@
   }
 
   /* =====================================================
-   *  GAME 1 — WORD CANNON
+   *  META PROGRESSION (persists across runs)
    * ===================================================== */
+  const META_ITEMS = [
+    { id: "armor",  kind: "unlock", name: "Unlock: Armor",       desc: "adds Armor to the upgrade pool",           cost: 20 },
+    { id: "turret", kind: "unlock", name: "Unlock: Auto-Turret", desc: "adds Auto-Turret to the upgrade pool",     cost: 40 },
+    { id: "curses", kind: "unlock", name: "Unlock: Curses",      desc: "optional wave curse: coins x1.5",          cost: 30 },
+    { id: "life",   kind: "perk",   name: "Extra Heart",         desc: "+1 starting life",   max: 2, costs: [40, 90] },
+    { id: "seed",   kind: "perk",   name: "Seed Money",          desc: "+15 starting coins", max: 3, costs: [15, 30, 50] },
+  ];
+  const defaultMeta = () => ({ shards: 0, bestScore: 0, bestWave: 0, unlocked: {}, perks: {} });
+  let meta = defaultMeta();
+  try { meta = Object.assign(defaultMeta(), JSON.parse(localStorage.getItem("wa_meta") || "{}")); } catch (e) {}
+  const saveMeta = () => { try { localStorage.setItem("wa_meta", JSON.stringify(meta)); } catch (e) {} };
+  const perk = id => meta.perks[id] || 0;
+
+  /* =====================================================
+   *  GAME 1 — WORD CANNON (roguelike)
+   * ===================================================== */
+  // ---- tunables ----
+  // hint = how far from the cannon (fraction of screen width) a block starts blinking its hidden letters;
+  // it shrinks by 0.01 each wave (min 0.15)
+  const DIFF = {
+    easy:   { hide: 0.25, speed: 1,   hint: 0.5 },
+    medium: { hide: 0.45, speed: 1.1, hint: 0.4 },
+    hard:   { hide: 0.7,  speed: 1.2, hint: 0.3 },
+  };
+  const WAVE_BASE = 12, WAVE_STEP = 3;            // enemies per wave = 12 + 3*wave
+  const SPEED_PER_WAVE = 0.06, HIDE_PER_WAVE = 0.05;
+  const BASE_SPEED = 0.04;                         // fraction of screen width per second
+  const CURSE_COIN_MULT = 1.5;
+  const TURRET_HITS = 5;
+  const HINT_STEP = 0.35;                          // seconds each hint frame is shown (hidden letters cycle left→right)
+  const UPG = {
+    slow:   { name: "Slow Field",  max: 5, cost: l => 30 + 20 * l, desc: "enemies move 12% slower" },
+    reveal: { name: "Reveal+",     max: 3, cost: l => 35 + 25 * l, desc: "every block shows 1 more letter" },
+    armor:  { name: "Armor",       max: 4, cost: l => 40 + 30 * l, desc: "+1 life", meta: "armor" },
+    turret: { name: "Auto-Turret", max: 4, cost: l => (l === 0 ? 60 : 50 + 35 * l), desc: `knockback shots, ${TURRET_HITS} hits destroy a block`, meta: "turret" },
+  };
+  const CURSES = {
+    swift: { name: "Swift", desc: "enemies +25% speed" },
+    fog:   { name: "Fog",   desc: "+20% letters hidden" },
+  };
+
   const canvas = $("#game"), ctx = canvas.getContext("2d");
   const input = $("#answer"), hud = $("#hud"), vocabInfo = $("#vocabInfo");
-  const overEl = $("#over");
-  let W = 0, H = 0, raf = 0, last = 0, state = "idle";
-  let enemies, shots, parts, floats, bag, score, lives, kills, spawnT, introT, shakeT, laneCount;
-  const cannon = { x: -90, angle: 0, recoil: 0 };
+  const ov = $("#ov"), ovBody = $("#ovBody");
+  let W = 0, H = 0, raf = 0, last = 0, state = "idle", prevState = "play", ovKind = null;
+  let R = null, enemies = [], shots = [], parts = [], floats = [], bag = [], laneCount = 3, shakeT = 0, introT = 0;
+  const cannon = { x: -90, angle: 0, recoil: 0, tAngle: -0.3 };
   const TOP = 64, BOTTOM = 96, BLOCK_H = 58;
   const rand = (a, b) => a + Math.random() * (b - a);
   const easeOut = p => 1 - Math.pow(1 - p, 3);
+  const norm = s => s.toLowerCase().replace(/\s+/g, " ").trim();
+  const running = () => ["intro", "play", "shop", "paused"].includes(state);
 
   function sizeCanvas() {
     const dpr = window.devicePixelRatio || 1;
@@ -274,14 +325,17 @@
   new ResizeObserver(() => { fit(cur); sizeCanvas(); }).observe(frame);
   sizeCanvas();
 
-  const level = () => 1 + Math.floor(kills / 5);
-  const hideFrac = () => {
-    const v = $("#diff").value;
-    return v === "auto" ? Math.min(0.3 + 0.1 * (level() - 1), 1) : parseFloat(v);
-  };
   const laneY = i => TOP + (i + 0.5) * (H - TOP - BOTTOM) / laneCount;
   const cannonY = () => TOP + (H - TOP - BOTTOM) / 2;
-  const norm = s => s.toLowerCase().replace(/\s+/g, " ").trim();
+  const diff = () => DIFF[$("#diff").value] || DIFF.easy;
+  const comboMult = s => (s >= 10 ? 2 : s >= 6 ? 1.5 : s >= 3 ? 1.2 : 1);
+
+  const hideFrac = () => Math.min(1, diff().hide + HIDE_PER_WAVE * (R.wave - 1) + (R.curse === "fog" ? 0.2 : 0));
+  const speedNow = () =>
+    W * BASE_SPEED * diff().speed * (1 + SPEED_PER_WAVE * (R.wave - 1)) *
+    (R.curse === "swift" ? 1.25 : 1) * Math.pow(0.88, R.upg.slow);
+  const toSpawnFor = w => WAVE_BASE + WAVE_STEP * w;
+  const spawnGap = () => Math.max(1.3, 2.8 - 0.1 * R.wave) + rand(0, 0.6);
 
   function nextWord() {
     if (!bag.length) {
@@ -290,118 +344,317 @@
     }
     return vocab[bag.pop()];
   }
-  function mask(word, f) {
+  function mask(word) {
     const chars = [...word];
     const idx = chars.map((c, i) => (/[\p{L}\d]/u.test(c) ? i : -1)).filter(i => i >= 0);
     for (let i = idx.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [idx[i], idx[j]] = [idx[j], idx[i]]; }
-    const n = Math.min(idx.length, Math.max(1, Math.round(idx.length * f)));
-    idx.slice(0, n).forEach(i => (chars[i] = "_"));
-    return { text: chars.join(" "), hidden: n };
+    let n = Math.max(1, Math.round(idx.length * hideFrac()));
+    n = Math.min(idx.length, Math.max(0, n - R.upg.reveal));
+    const order = idx.slice(0, n);
+    order.forEach(i => (chars[i] = "_"));
+    return { text: chars.join(" "), hidden: n, order };
   }
 
   function spawn() {
-    const busyLanes = new Set(enemies.filter(e => !e.dead && e.x + e.w > W - 30).map(e => e.lane));
+    const busyLanes = new Set(enemies.filter(e => e.x + e.w > W - 30).map(e => e.lane));
     const free = [...Array(laneCount).keys()].filter(l => !busyLanes.has(l));
-    if (!free.length) return;
+    if (!free.length) return false;
     const lane = free[(Math.random() * free.length) | 0];
     const [en, vi] = nextWord();
-    const m = mask(en, hideFrac());
+    const m = mask(en);
     ctx.font = "bold 18px monospace"; const w1 = ctx.measureText(m.text).width;
     ctx.font = "13px monospace";      const w2 = ctx.measureText(vi).width;
-    enemies.push({ word: en, shown: m.text, vi, hidden: m.hidden, lane, w: Math.max(w1, w2) + 32, x: W + 10, dead: false, targeted: false });
+    enemies.push({ word: en, shown: m.text, vi, hidden: m.hidden, lane, w: Math.max(w1, w2) + 32, x: W + 10, dead: false, targeted: false, hits: 0, orig: [...en], order: m.order.slice().sort((a, b) => a - b), hintT: 0, step: -1, inZone: false, flash: 0 });
+    return true;
   }
 
+  // hint: inside the hint zone, hidden letters blink one at a time, left→right, looping until the block dies
+  function hint(e, dt) {
+    if (e.flash > 0) e.flash -= dt;
+    const n = e.order.length;
+    if (!n) return;
+    const build = ri => { const a = [...e.orig]; e.order.forEach(i => { if (i !== ri) a[i] = "_"; }); return a.join(" "); };
+    const zone = Math.max(0.15, diff().hint - 0.01 * (R.wave - 1));
+    const start = cannon.x + 44 + W * zone;
+    if (e.x < start) {
+      if (!e.inZone) { e.inZone = true; e.hintT = 0; e.flash = 0.35; }
+      e.hintT += dt;
+      const frames = n === 1 ? 2 : n;                    // a single hidden letter needs a blank frame to blink
+      const step = Math.floor(e.hintT / HINT_STEP) % frames;
+      if (step !== e.step) { e.step = step; e.shown = build(step < n ? e.order[step] : -1); }
+    } else if (e.inZone) {                               // knocked back out of the zone
+      e.inZone = false; e.step = -1; e.shown = build(-1);
+    }
+  }
+  const center = e => ({ x: e.x + e.w / 2, y: laneY(e.lane) });
   function muzzle() {
     const L = 78 - cannon.recoil;
     return { x: cannon.x + Math.cos(cannon.angle) * L, y: cannonY() + Math.sin(cannon.angle) * L };
   }
-  function center(e) { return { x: e.x + e.w / 2, y: laneY(e.lane) }; }
 
   function fire(e) {
     e.targeted = true;
-    const c = center(e), cy = cannonY();
-    cannon.angle = Math.atan2(c.y - cy, c.x - cannon.x);
+    const c = center(e);
+    cannon.angle = Math.atan2(c.y - cannonY(), c.x - cannon.x);
     cannon.recoil = 14;
     const m = muzzle();
-    shots.push({ x: m.x, y: m.y, target: e });
+    shots.push({ x: m.x, y: m.y, target: e, kind: "main" });
   }
-  function explode(e) {
-    e.dead = true; kills++;
-    score += 10 + e.hidden * 5;
+  function fireTurret() {
+    const cand = enemies.filter(e => !e.dead && !e.targeted && e.x < W - 10);
+    if (!cand.length) return false;
+    const e = cand.reduce((a, b) => (a.x < b.x ? a : b)), c = center(e);
+    const ox = cannon.x, oy = cannonY() - 22;
+    cannon.tAngle = Math.atan2(c.y - oy, c.x - ox);
+    shots.push({ x: ox + Math.cos(cannon.tAngle) * 30, y: oy + Math.sin(cannon.tAngle) * 30, target: e, kind: "turret" });
+    return true;
+  }
+
+  function explode(e, auto) {
+    e.dead = true; R.kills++;
+    const base = 1 + Math.ceil(e.hidden / 2);
+    let gain;
+    if (auto) { gain = Math.max(1, Math.ceil(base / 2)); R.score += 5; }
+    else {
+      R.streak++; R.maxStreak = Math.max(R.maxStreak, R.streak);
+      gain = Math.max(1, Math.round(base * comboMult(R.streak) * (R.curse ? CURSE_COIN_MULT : 1)));
+      R.score += Math.round((10 + e.hidden * 5) * comboMult(R.streak));
+    }
+    R.coins += gain; R.earned += gain;
     const c = center(e);
     for (let i = 0; i < 18; i++) {
       const a = rand(0, Math.PI * 2), v = rand(60, 240);
       parts.push({ x: c.x, y: c.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: rand(.4, .8), max: .8, ch: "*#%@+x"[(Math.random() * 6) | 0] });
     }
-    floats.push({ text: e.word, x: c.x, y: c.y, life: 1 });
+    floats.push({ text: e.word, x: c.x, y: c.y, life: 1.1 });
+    floats.push({ text: `+${gain}`, x: c.x, y: c.y + 26, life: .8, small: true });
   }
 
-  function reset() {
+  function newRun() {
+    R = {
+      wave: 1, toSpawn: toSpawnFor(1), spawned: 0, banner: 2, spawnT: 1.4,
+      score: 0, kills: 0, coins: 15 * perk("seed"), earned: 0,
+      lives: 3 + perk("life"), streak: 0, maxStreak: 0,
+      upg: { slow: 0, reveal: 0, armor: 0, turret: 0 },
+      curse: null, nextCurse: null, turretT: 4,
+      draft: [], rerolls: 0, awarded: false, gain: 0,
+    };
     enemies = []; shots = []; parts = []; floats = []; bag = [];
-    score = 0; lives = 3; kills = 0; spawnT = 0; introT = 0; shakeT = 0;
+    shakeT = 0; introT = 0;
     laneCount = Math.max(2, Math.min(5, Math.floor((H - TOP - BOTTOM) / 72)));
     cannon.x = -90; cannon.angle = 0; cannon.recoil = 0;
-    overEl.classList.remove("on");
     input.value = "";
-    updateInfo();
+    vocabInfo.textContent = `${vocab.length} words`;
   }
-  function updateInfo() { vocabInfo.textContent = `${vocab.length} words`; }
 
+  /* ---- run end / shards ---- */
+  function awardShards() {
+    if (!R || R.awarded) return;
+    R.awarded = true;
+    R.gain = Math.floor(R.earned * 0.25) + 8 * (R.wave - 1) + Math.floor(R.kills / 10);
+    meta.shards += R.gain;
+    meta.bestScore = Math.max(meta.bestScore, R.score);
+    meta.bestWave = Math.max(meta.bestWave, R.wave);
+    saveMeta();
+  }
+  function gameOver() { state = "over"; awardShards(); input.blur(); showOv("over"); }
+
+  /* ---- overlay rendering ---- */
+  const opt = (attr, title, right, desc, off) =>
+    `<button class="opt" ${attr} ${off ? "disabled" : ""}><div class="r"><b>${title}</b><span>${right}</span></div><div class="d">${desc}</div></button>`;
+
+  function poolIds() {
+    return Object.keys(UPG).filter(id => (!UPG[id].meta || meta.unlocked[UPG[id].meta]) && R.upg[id] < UPG[id].max);
+  }
+  function pickOne(exclude) {
+    const p = poolIds().filter(id => !exclude.includes(id));
+    return p.length ? p[(Math.random() * p.length) | 0] : null;
+  }
+  function rollDraft() {
+    const d = [];
+    for (let i = 0; i < 3; i++) { const id = pickOne(d); if (id) d.push(id); }
+    return d;
+  }
+  const rerollCost = () => 10 + 5 * R.rerolls;
+
+  function workshopHTML() {
+    let h = `<h3>WORKSHOP — shards: ${meta.shards}</h3>`;
+    for (const it of META_ITEMS) {
+      if (it.kind === "unlock") {
+        const owned = !!meta.unlocked[it.id];
+        h += opt(`data-act="meta" data-id="${it.id}"`, it.name, owned ? "owned" : `${it.cost} shards`, it.desc, owned || meta.shards < it.cost);
+      } else {
+        const lv = perk(it.id), maxed = lv >= it.max, cost = it.costs[lv];
+        h += opt(`data-act="meta" data-id="${it.id}"`, `${it.name} (${lv}/${it.max})`, maxed ? "maxed" : `${cost} shards`, it.desc, maxed || meta.shards < cost);
+      }
+    }
+    return h;
+  }
+
+  function renderOv() {
+    if (ovKind === "shop") {
+      let h = `<h2>WAVE ${R.wave} CLEARED</h2>
+        <div class="m">coins ${R.coins} &nbsp;·&nbsp; score ${R.score} &nbsp;·&nbsp; lives ${R.lives} &nbsp;·&nbsp; best combo ${R.maxStreak}</div>
+        <h3>UPGRADES  [1] [2] [3]</h3>`;
+      if (!R.draft.length) h += `<div class="m">nothing left to buy.</div>`;
+      R.draft.forEach((id, i) => {
+        const u = UPG[id], lv = R.upg[id], cost = u.cost(lv);
+        h += opt(`data-act="buy" data-i="${i}"`, `[${i + 1}] ${u.name}  Lv ${lv} → ${lv + 1}`, `${cost} coins`, u.desc, R.coins < cost);
+      });
+      h += `<div class="row"><button class="btn" data-act="reroll" ${R.coins < rerollCost() ? "disabled" : ""}>[R] Reroll — ${rerollCost()} coins</button></div>`;
+      if (meta.unlocked.curses) {
+        h += `<h3>CURSE FOR NEXT WAVE (coins x${CURSE_COIN_MULT})  [C]</h3><div class="row">
+          <button class="btn ${!R.nextCurse ? "on" : ""}" data-act="curse" data-v="">None</button>` +
+          Object.entries(CURSES).map(([k, c]) => `<button class="btn ${R.nextCurse === k ? "on" : ""}" data-act="curse" data-v="${k}" title="${c.desc}">${c.name} — ${c.desc}</button>`).join("") + `</div>`;
+      }
+      h += `<h3></h3><button class="opt" data-act="start"><div class="r"><b>[Enter] Start wave ${R.wave + 1}</b><span>${toSpawnFor(R.wave + 1)} enemies</span></div></button>`;
+      ovBody.innerHTML = h;
+    } else if (ovKind === "over") {
+      ovBody.innerHTML = `<h2>GAME OVER</h2>
+        <div class="m">wave ${R.wave} &nbsp;·&nbsp; score ${R.score} &nbsp;·&nbsp; kills ${R.kills} &nbsp;·&nbsp; best combo ${R.maxStreak}<br>
+        coins earned ${R.earned} &nbsp;→&nbsp; <b>+${R.gain} shards</b><br>
+        best ever: wave ${meta.bestWave}, score ${meta.bestScore}</div>
+        ${workshopHTML()}
+        <h3></h3><button class="opt" data-act="restart"><div class="r"><b>Play again</b><span></span></div></button>`;
+    } else if (ovKind === "workshop") {
+      ovBody.innerHTML = `<h2>PAUSED</h2>${workshopHTML()}<h3></h3><button class="opt" data-act="resume"><div class="r"><b>Resume</b><span></span></div></button>`;
+    }
+  }
+  function showOv(kind) { ovKind = kind; renderOv(); ov.classList.add("on"); ov.scrollTop = 0; }
+  function hideOv() { ovKind = null; ov.classList.remove("on"); }
+
+  /* ---- shop actions ---- */
+  function buy(i) {
+    const id = R.draft[i]; if (!id) return;
+    const u = UPG[id], cost = u.cost(R.upg[id]);
+    if (R.coins < cost) return;
+    R.coins -= cost; R.upg[id]++;
+    if (id === "armor") R.lives++;
+    const others = R.draft.filter((_, k) => k !== i);
+    const repl = pickOne(others);
+    if (repl) R.draft[i] = repl; else R.draft.splice(i, 1);
+    renderOv();
+  }
+  function reroll() {
+    if (R.coins < rerollCost()) return;
+    R.coins -= rerollCost(); R.rerolls++;
+    R.draft = rollDraft(); renderOv();
+  }
+  function startNextWave() {
+    R.wave++; R.toSpawn = toSpawnFor(R.wave); R.spawned = 0;
+    R.curse = R.nextCurse; R.nextCurse = null;
+    R.banner = 2; R.spawnT = 1.4; R.turretT = 3;
+    hideOv(); state = "play"; input.focus();
+  }
+  function openShop() {
+    state = "shop"; R.curse = null; R.nextCurse = null; R.rerolls = 0;
+    R.draft = rollDraft(); input.blur(); showOv("shop");
+  }
+
+  ov.addEventListener("click", e => {
+    const b = e.target.closest("[data-act]"); if (!b || b.disabled) return;
+    const a = b.dataset.act;
+    if (a === "buy") buy(+b.dataset.i);
+    else if (a === "reroll") reroll();
+    else if (a === "curse") { R.nextCurse = b.dataset.v || null; renderOv(); }
+    else if (a === "start") startNextWave();
+    else if (a === "restart") startGame();
+    else if (a === "resume") { hideOv(); state = prevState; input.focus(); }
+    else if (a === "meta") {
+      const it = META_ITEMS.find(x => x.id === b.dataset.id);
+      const cost = it.kind === "unlock" ? it.cost : it.costs[perk(it.id)];
+      if (meta.shards >= cost) {
+        meta.shards -= cost;
+        if (it.kind === "unlock") meta.unlocked[it.id] = true; else meta.perks[it.id] = perk(it.id) + 1;
+        saveMeta(); renderOv();
+      }
+    }
+    if (document.activeElement && document.activeElement !== input) document.activeElement.blur();
+  });
+  document.addEventListener("keydown", e => {
+    if (ovKind !== "shop") return;
+    const k = e.key.toLowerCase();
+    if (k === "1" || k === "2" || k === "3") buy(+k - 1);
+    else if (k === "r") reroll();
+    else if (k === "c" && meta.unlocked.curses) { const o = ["", "swift", "fog"]; R.nextCurse = o[(o.indexOf(R.nextCurse || "") + 1) % 3] || null; renderOv(); }
+    else if (k === "enter" || k === " ") startNextWave();
+    else return;
+    e.preventDefault();
+  });
+
+  /* ---- update / draw ---- */
   function update(dt) {
     if (state === "intro") {
       introT += dt;
       const p = Math.min(introT / 0.9, 1);
       cannon.x = -90 + 160 * easeOut(p);
-      if (p >= 1) { state = "play"; spawnT = 0.4; input.focus(); }
+      if (p >= 1) { state = "play"; input.focus(); }
     }
     if (state === "play") {
-      spawnT -= dt;
-      if (spawnT <= 0) { spawn(); spawnT = Math.max(1.1, 3.4 - 0.18 * (level() - 1)) + rand(0, 0.8); }
-      const speed = W * 0.045 + level() * 5;
-      const danger = cannon.x + 44;
+      R.banner = Math.max(0, R.banner - dt);
+      if (R.banner < 1 && R.spawned < R.toSpawn) {
+        R.spawnT -= dt;
+        if (R.spawnT <= 0) { if (spawn()) { R.spawned++; R.spawnT = spawnGap(); } else R.spawnT = 0.3; }
+      }
+      const speed = speedNow(), danger = cannon.x + 44;
       for (const e of enemies) {
         if (e.dead) continue;
         e.x -= speed * dt;
+        hint(e, dt);
         if (e.x <= danger) {
-          e.dead = true; lives--; shakeT = 0.35;
-          if (lives <= 0) { state = "over"; $("#overScore").textContent = `score ${score} · level ${level()}`; overEl.classList.add("on"); }
+          e.dead = true; R.lives--; R.streak = 0; shakeT = 0.35;
+          if (R.lives <= 0) { gameOver(); break; }
         }
       }
-      for (const s of shots) {
-        if (s.target.dead && !s.hit) { s.gone = true; continue; }
-        const c = center(s.target), dx = c.x - s.x, dy = c.y - s.y, d = Math.hypot(dx, dy);
-        if (d < 26) { explode(s.target); s.gone = true; }
-        else { const v = 1100 * dt; s.x += dx / d * v; s.y += dy / d * v; }
-      }
-      shots = shots.filter(s => !s.gone);
-      enemies = enemies.filter(e => !e.dead || e.x > -e.w);
-      enemies = enemies.filter(e => !e.dead);
-      // aim at the nearest live enemy when idle
-      const live = enemies.filter(e => !e.targeted);
-      if (live.length && !shots.length) {
-        const e = live.reduce((a, b) => (a.x < b.x ? a : b)), c = center(e);
-        const want = Math.atan2(c.y - cannonY(), c.x - cannon.x);
-        cannon.angle += (want - cannon.angle) * Math.min(1, 8 * dt);
+      if (state === "play") {
+        if (R.upg.turret > 0) {
+          R.turretT -= dt;
+          if (R.turretT <= 0) { if (fireTurret()) R.turretT = Math.max(2.5, 8 - 1.3 * R.upg.turret); else R.turretT = 0.5; }
+        }
+        for (const s of shots) {
+          if (s.target.dead) { s.gone = true; continue; }
+          const c = center(s.target), dx = c.x - s.x, dy = c.y - s.y, d = Math.hypot(dx, dy);
+          if (d < 26) {
+            if (s.kind === "main") explode(s.target, false);
+            else {
+              s.target.x = Math.min(W + 30, s.target.x + W * 0.07); s.target.hits++;
+              if (s.target.hits >= TURRET_HITS) explode(s.target, true);
+            }
+            s.gone = true;
+          } else { const v = (s.kind === "main" ? 1100 : 800) * dt; s.x += dx / d * v; s.y += dy / d * v; }
+        }
+        shots = shots.filter(s => !s.gone);
+        enemies = enemies.filter(e => !e.dead);
+        const live = enemies.filter(e => !e.targeted);
+        if (live.length && !shots.some(s => s.kind === "main")) {
+          const e = live.reduce((a, b) => (a.x < b.x ? a : b)), c = center(e);
+          const want = Math.atan2(c.y - cannonY(), c.x - cannon.x);
+          cannon.angle += (want - cannon.angle) * Math.min(1, 8 * dt);
+        }
+        if (R.spawned >= R.toSpawn && !enemies.length && R.banner <= 0) openShop();
       }
     }
-    cannon.recoil = Math.max(0, cannon.recoil - 50 * dt);
-    shakeT = Math.max(0, shakeT - dt);
-    for (const p of parts) { p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 0.96; p.vy *= 0.96; p.life -= dt; }
-    parts = parts.filter(p => p.life > 0);
-    for (const f of floats) { f.y -= 30 * dt; f.life -= dt; }
-    floats = floats.filter(f => f.life > 0);
-    hud.textContent = `SCORE ${score}   LV ${level()}   LIVES ${"♥".repeat(Math.max(lives, 0)) || "-"}`;
+    if (state !== "paused") {
+      cannon.recoil = Math.max(0, cannon.recoil - 50 * dt);
+      shakeT = Math.max(0, shakeT - dt);
+      for (const p of parts) { p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 0.96; p.vy *= 0.96; p.life -= dt; }
+      parts = parts.filter(p => p.life > 0);
+      for (const f of floats) { f.y -= 30 * dt; f.life -= dt; }
+      floats = floats.filter(f => f.life > 0);
+    }
+    const cm = comboMult(R.streak);
+    hud.textContent =
+      `WAVE ${R.wave}  SCORE ${R.score}  COINS ${R.coins}  ${"♥".repeat(Math.max(R.lives, 0)) || "-"}` +
+      (R.streak >= 3 ? `  COMBO x${cm} (${R.streak})` : "") + (R.curse ? `  [${CURSES[R.curse].name}]` : "");
   }
 
   function drawCannon() {
     const cx = cannon.x, cy = cannonY();
     ctx.fillStyle = "#000"; ctx.strokeStyle = "#000"; ctx.lineWidth = 3;
-    // barrel
     ctx.save(); ctx.translate(cx, cy); ctx.rotate(cannon.angle);
     ctx.fillRect(-cannon.recoil, -9, 70, 18);
     ctx.fillRect(60 - cannon.recoil, -13, 14, 26);
     ctx.restore();
-    // mount + wheel
     ctx.fillRect(cx - 30, cy + 4, 60, 12);
     ctx.fillStyle = "#fff";
     ctx.beginPath(); ctx.arc(cx, cy + 18, 22, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
@@ -411,6 +664,12 @@
       ctx.beginPath(); ctx.moveTo(cx, cy + 18); ctx.lineTo(cx + Math.cos(a) * 22, cy + 18 + Math.sin(a) * 22); ctx.stroke();
     }
     ctx.fillStyle = "#000"; ctx.beginPath(); ctx.arc(cx, cy + 18, 4, 0, Math.PI * 2); ctx.fill();
+    if (R.upg.turret > 0) { // mini turret on top
+      ctx.save(); ctx.translate(cx, cy - 22); ctx.rotate(cannon.tAngle);
+      ctx.fillRect(0, -3, 30, 6); ctx.restore();
+      ctx.fillStyle = "#fff"; ctx.strokeStyle = "#000"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(cx, cy - 22, 8, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    }
   }
 
   function draw() {
@@ -418,7 +677,6 @@
     ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, W, H);
     ctx.save();
     if (shakeT > 0) ctx.translate(rand(-5, 5), rand(-5, 5));
-    // danger line
     ctx.strokeStyle = "#bbb"; ctx.lineWidth = 1; ctx.setLineDash([6, 6]);
     ctx.beginPath(); ctx.moveTo(cannon.x + 44, TOP); ctx.lineTo(cannon.x + 44, H - BOTTOM + 20); ctx.stroke();
     ctx.setLineDash([]);
@@ -426,58 +684,81 @@
     ctx.textAlign = "center"; ctx.textBaseline = "middle";
     for (const e of enemies) {
       const y = laneY(e.lane) - BLOCK_H / 2;
-      ctx.fillStyle = "#fff"; ctx.strokeStyle = "#000"; ctx.lineWidth = e.targeted ? 3 : 2;
+      ctx.fillStyle = "#fff"; ctx.strokeStyle = "#000"; ctx.lineWidth = (e.targeted || e.flash > 0) ? 4 : 2;
       ctx.fillRect(e.x, y, e.w, BLOCK_H); ctx.strokeRect(e.x, y, e.w, BLOCK_H);
       ctx.fillStyle = "#000"; ctx.font = "bold 18px monospace";
       ctx.fillText(e.shown, e.x + e.w / 2, y + 22);
       ctx.fillStyle = "#555"; ctx.font = "13px monospace";
       ctx.fillText(e.vi, e.x + e.w / 2, y + 43);
+      if (e.hits) { ctx.fillStyle = "#000"; ctx.fillRect(e.x, y + BLOCK_H - 4, e.w * e.hits / TURRET_HITS, 4); }
     }
-    ctx.fillStyle = "#000";
-    for (const s of shots) { ctx.beginPath(); ctx.arc(s.x, s.y, 6, 0, Math.PI * 2); ctx.fill(); }
+    ctx.fillStyle = "#000"; ctx.strokeStyle = "#000"; ctx.lineWidth = 2;
+    for (const s of shots) {
+      ctx.beginPath(); ctx.arc(s.x, s.y, s.kind === "main" ? 6 : 4, 0, Math.PI * 2);
+      s.kind === "main" ? ctx.fill() : ctx.stroke();
+    }
     ctx.font = "bold 16px monospace";
     for (const p of parts) { ctx.globalAlpha = Math.max(0, p.life / p.max); ctx.fillText(p.ch, p.x, p.y); }
-    ctx.font = "bold 18px monospace";
-    for (const f of floats) { ctx.globalAlpha = Math.max(0, f.life); ctx.fillText(f.text, f.x, f.y - 30); }
+    for (const f of floats) {
+      ctx.globalAlpha = Math.max(0, Math.min(1, f.life));
+      ctx.font = f.small ? "12px monospace" : "bold 18px monospace";
+      ctx.fillText(f.text, f.x, f.y - 30);
+    }
     ctx.globalAlpha = 1;
+    if (state === "play" && R.banner > 0) {
+      ctx.globalAlpha = Math.min(1, R.banner / 0.6);
+      ctx.fillStyle = "#000"; ctx.font = "bold 44px monospace";
+      ctx.fillText(`WAVE ${R.wave}`, W / 2, H / 2 - 10);
+      ctx.font = "13px monospace";
+      ctx.fillText(R.curse ? `curse: ${CURSES[R.curse].name} — ${CURSES[R.curse].desc}  (coins x${CURSE_COIN_MULT})` : `${R.toSpawn} enemies`, W / 2, H / 2 + 28);
+      ctx.globalAlpha = 1;
+    }
     ctx.restore();
   }
 
   function loop(t) {
     raf = requestAnimationFrame(loop);
     const dt = Math.min((t - last) / 1000, 0.05); last = t;
-    update(dt); draw();
+    if (state !== "paused") update(dt);
+    draw();
   }
 
   function startGame() {
     cancelAnimationFrame(raf);
-    sizeCanvas(); reset();
+    sizeCanvas(); newRun(); hideOv();
     state = "intro"; last = performance.now();
     raf = requestAnimationFrame(loop);
   }
   function stopGame() {
+    if (running()) awardShards();
     cancelAnimationFrame(raf); state = "idle";
-    overEl.classList.remove("on"); input.blur();
+    hideOv(); input.blur();
   }
 
-  /* input: auto-fire when typed text exactly matches an enemy word */
+  /* ---- input ---- */
   input.addEventListener("input", () => {
     if (state !== "play") return;
     const v = norm(input.value);
     if (!v) return;
-    const hit = enemies.filter(e => !e.dead && !e.targeted && norm(e.word) === v)
-                       .sort((a, b) => a.x - b.x)[0];
+    const hit = enemies.filter(e => !e.dead && !e.targeted && norm(e.word) === v).sort((a, b) => a.x - b.x)[0];
     if (hit) { fire(hit); input.value = ""; }
   });
   input.addEventListener("keydown", e => {
-    if (e.key === "Enter" && input.value) {
+    if (e.key === "Enter" && input.value && state === "play") {
+      R.streak = 0;
       input.classList.remove("shake"); void input.offsetWidth; input.classList.add("shake");
       input.value = "";
     }
   });
-  frame.addEventListener("click", () => { if (body.classList.contains("game") && state === "play") input.focus(); });
+  frame.addEventListener("click", e => {
+    if (e.target.closest("#bar") || e.target.closest("#ov")) return;
+    if (body.classList.contains("game") && state === "play") input.focus();
+  });
 
-  /* upload */
+  $("#workshop").onclick = () => {
+    if (state !== "play") return;
+    prevState = state; state = "paused"; input.blur(); showOv("workshop");
+  };
   $("#upload").onclick = () => $("#file").click();
   $("#file").onchange = async ev => {
     const f = ev.target.files[0]; if (!f) return;
@@ -486,10 +767,10 @@
     if (!list.length) { vocabInfo.textContent = "no valid lines (use: english,vietnamese)"; return; }
     vocab = list;
     try { localStorage.setItem("wa_vocab", JSON.stringify(vocab)); } catch (e) {}
+    if (running()) awardShards();
     startGame();
   };
-  $("#restart").onclick = () => { startGame(); };
-  $("#diff").onchange = () => input.focus();
+  $("#diff").onchange = () => { $("#diff").blur(); if (state === "play") input.focus(); };
 
   /* =====================================================
    *  MENU
@@ -498,7 +779,7 @@
   function enterGame(fn) {
     body.classList.add("game");
     statusEl.textContent = "";
-    setTimeout(fn, 760); // wait for the zoom-out
+    setTimeout(fn, 760);
   }
   function leaveGame() {
     stopGame();

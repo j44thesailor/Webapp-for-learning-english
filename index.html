@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Word Arcade</title>
+<style>
+  :root { --fg:#000; --bg:#fff; --mute:#777; --line:#000; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg); color: var(--fg);
+    font-family: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    display: grid; grid-template-columns: 300px 1fr; height: 100vh;
+  }
+
+  /* LEFT: game modes */
+  aside {
+    border-right: 1px solid var(--line);
+    padding: 28px 24px; display: flex; flex-direction: column; gap: 10px;
+    overflow-y: auto;
+  }
+  h1 { font-size: 20px; letter-spacing: .08em; text-transform: uppercase; }
+  .sub { font-size: 11px; color: var(--mute); margin-bottom: 18px; }
+  .mode {
+    font: inherit; font-size: 13px; text-align: left; cursor: pointer;
+    padding: 12px 14px; background: var(--bg); color: var(--fg);
+    border: 1px solid var(--line); display: flex; justify-content: space-between;
+    transition: background .12s, color .12s;
+  }
+  .mode:hover, .mode:focus-visible { background: var(--fg); color: var(--bg); outline: none; }
+  .mode .idx { color: var(--mute); }
+  .mode:hover .idx, .mode:focus-visible .idx { color: #aaa; }
+  #status { margin-top: auto; font-size: 11px; color: var(--mute); min-height: 1.4em; }
+
+  /* RIGHT: ascii display */
+  main { padding: 28px; display: flex; flex-direction: column; gap: 10px; min-width: 0; min-height: 0; }
+  #frame { flex: 1; border: 1px solid var(--line); position: relative; overflow: hidden; min-height: 0; }
+  #art {
+    position: absolute; top: 0; left: 0; transform-origin: 0 0;
+    font-size: 12px; line-height: 1; white-space: pre; color: var(--fg);
+    user-select: none; will-change: transform;
+  }
+  #meta { font-size: 11px; color: var(--mute); display: flex; justify-content: space-between; }
+
+  @media (max-width: 760px) {
+    body { grid-template-columns: 1fr; grid-template-rows: auto 1fr; height: auto; min-height: 100vh; }
+    aside { border-right: 0; border-bottom: 1px solid var(--line); }
+    main { height: 70vh; }
+  }
+</style>
+</head>
+<body>
+
+<aside>
+  <h1>Word Arcade</h1>
+  <div class="sub">learn english by playing</div>
+  <div id="modes"></div>
+  <div id="status"></div>
+</aside>
+
+<main>
+  <div id="frame"><pre id="art"></pre></div>
+  <div id="meta"><span id="counter"></span><span>auto-cycle</span></div>
+</main>
+
+<script src="arts.js"></script>
+<script>
+(() => {
+  // ---------- config ----------
+  const HOLD_MS   = 8000;   // thời gian giữ mỗi art
+  const NOISE_MS  = 700;    // mỗi nửa transition (out + in)
+  const MAX_SCALE = 4;      // art nhỏ không phóng quá mức này
+  const GLYPHS    = "#%&@$*+=-:;.,/\\|<>?!0123456789";
+
+  // ---------- game modes (placeholder) ----------
+  const MODES = [
+    "Vocabulary Match", "Word Scramble", "Hangman", "Typing Race",
+    "Listening Quiz",   "Sentence Builder", "Fill the Blank", "Speed Translate",
+  ];
+  const modesEl = document.getElementById("modes");
+  const statusEl = document.getElementById("status");
+  modesEl.style.display = "flex"; modesEl.style.flexDirection = "column"; modesEl.style.gap = "10px";
+  MODES.forEach((name, i) => {
+    const b = document.createElement("button");
+    b.className = "mode";
+    b.innerHTML = `<span>${name}</span><span class="idx">${String(i + 1).padStart(2, "0")}</span>`;
+    b.onclick = () => { statusEl.textContent = `[${name}] — not implemented yet`; };
+    modesEl.appendChild(b);
+  });
+
+  // ---------- ascii display ----------
+  const frame = document.getElementById("frame");
+  const pre = document.getElementById("art");
+  const counter = document.getElementById("counter");
+  const arts = window.ARTS || [];
+  if (!arts.length) { pre.textContent = "No art found in arts.js"; return; }
+
+  let cur = 0, busy = false;
+
+  // đo kích thước (chưa scale) của từng art, cache lại
+  const dims = arts.map(text => {
+    pre.style.transform = "none";
+    pre.textContent = text;
+    return { w: pre.offsetWidth, h: pre.offsetHeight };
+  });
+
+  function fit(i) {
+    const { w, h } = dims[i];
+    const pad = 16;
+    const fw = frame.clientWidth - pad * 2, fh = frame.clientHeight - pad * 2;
+    const s = Math.min(fw / w, fh / h, MAX_SCALE);
+    const x = (frame.clientWidth - w * s) / 2, y = (frame.clientHeight - h * s) / 2;
+    pre.style.transform = `translate(${x}px, ${y}px) scale(${s})`;
+  }
+
+  function show(i) {
+    pre.textContent = arts[i];
+    fit(i);
+    counter.textContent = `art ${String(i + 1).padStart(2, "0")} / ${String(arts.length).padStart(2, "0")}`;
+  }
+
+  // mỗi ký tự có ngưỡng riêng → nhiễu lan dần như static TV
+  function thresholds(n) { return Float32Array.from({ length: n }, Math.random); }
+
+  function noisy(text, th, p) {
+    let out = "";
+    for (let k = 0; k < text.length; k++) {
+      const c = text[k];
+      out += (c === "\n" || th[k] > p) ? c : GLYPHS[(Math.random() * GLYPHS.length) | 0];
+    }
+    return out;
+  }
+
+  // p: 0→1 (art bị nhiễu dần) hoặc 1→0 (nhiễu tan dần)
+  function phase(i, from, to) {
+    return new Promise(res => {
+      const text = arts[i], th = thresholds(text.length);
+      const t0 = performance.now();
+      let last = 0;
+      (function tick(now) {
+        const t = Math.min((now - t0) / NOISE_MS, 1);
+        if (now - last > 33) { // ~30fps
+          last = now;
+          pre.textContent = noisy(text, th, from + (to - from) * t);
+        }
+        t < 1 ? requestAnimationFrame(tick) : res();
+      })(t0);
+    });
+  }
+
+  async function next() {
+    if (busy || arts.length < 2) return;
+    busy = true;
+    const nxt = (cur + 1) % arts.length;
+    await phase(cur, 0, 1);      // art cũ tan thành nhiễu
+    fit(nxt);                     // đổi frame/scale lúc đang full nhiễu
+    counter.textContent = `art ${String(nxt + 1).padStart(2, "0")} / ${String(arts.length).padStart(2, "0")}`;
+    await phase(nxt, 1, 0);      // art mới hiện ra từ nhiễu
+    cur = nxt; show(cur); busy = false;
+  }
+
+  new ResizeObserver(() => fit(cur)).observe(frame);
+  show(cur);
+  setInterval(next, HOLD_MS + NOISE_MS * 2);
+})();
+</script>
+</body>
+</html>
